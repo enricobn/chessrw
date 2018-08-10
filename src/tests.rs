@@ -14,8 +14,10 @@ fn it_works() {
     let file = File::open("testresources/kramnik.pgn");
 
     for game in p.parse(file.unwrap()) {
-
-        //println!("{}", game.moves[0]);
+        //println!("Game", );
+        if game.moves.len() > 0 {
+            println!("{}", game.moves[0]);
+        }
 
     }
 }
