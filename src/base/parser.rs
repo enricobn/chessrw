@@ -71,6 +71,7 @@ pub struct ChessParserIterator {
     reason: GameResultReason,
     result_from_tag: String,
     variation_count: i32,
+    nags: HashMap<Int,Vec<String>>,
 }
 
 enum GameResultReason {
@@ -107,7 +108,7 @@ impl ChessParserIterator {
             not_parsed: String::new(), resultFromMoves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
             tag_key: None, tag_value: None, reason: GameResultReason::normal, result_from_tag: "".to_string(),
-            variation_count: 0};
+            variation_count: 0, nags: HashMap::new()};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -270,6 +271,36 @@ impl ChessParserIterator {
         }
     }
 
+    fn parse_move(&mut self, c: char) {
+        if c.is_whitespace() {
+            //println!("{}", self.not_parsed.trim_right().to_string());
+            self.moves.push(self.not_parsed.clone());
+            self.not_parsed.clear();
+            self.status = Status::moves;
+        } else {
+            self.not_parsed += &c.to_string();
+        }
+    }
+
+    fn parse_numeric_annotation_glyph(&mut self, c: char) {
+        if !c.is_digit(10) {
+            if self.not_parsed.len() > 0 {
+                let last_move_index = self.moves.last_index();
+                let move_nags = match self.nags.entry(last_move_index) {
+                    Entry::Occupied(o) => o.into_mut(),
+                    Entry::Vacant(v) => {
+                        v.insert(Vec::new())
+                    }
+                };
+                move_nags.push(self.not_parsed.to_string());
+            }
+            self.not_parsed += &c.to_string();
+            self.status = Status::moves;
+        } else {
+            self.not_parsed += &c.to_string();
+        }
+    }
+
     fn clear(&mut self) {
         self.buf.clear();
         self.moves.clear(); 
@@ -288,6 +319,7 @@ impl ChessParserIterator {
         self.reason = GameResultReason::normal;
         self.result_from_tag = "".to_string();
         self.variation_count= 0;
+        self.nags.clear();
     }
 
 }
@@ -408,6 +440,8 @@ impl Iterator for ChessParserIterator {
 
                         if self.status == Status::heading {
                             self.parse_heading(c);
+                            self.last_char = c;
+                            continue;
                         }
 
                         if self.status == Status::headingValue {
@@ -448,50 +482,25 @@ impl Iterator for ChessParserIterator {
 
                         if self.status == Status::moveNumber {
                             if c.is_whitespace() || c == '.' {
-                                self.last_char = c;
-                                continue;
                             } else {
                                 self.status = Status::move_;
                                 self.not_parsed += &c.to_string();
-                                self.last_char = c;
-                                continue;
                             }
+                            self.last_char = c;
+                            continue;
                         }
 
                         if self.status == Status::move_ {
-                            if c.is_whitespace() {
-                                println!("{}", self.not_parsed.trim_right().to_string());
-                                self.moves.push(self.not_parsed.clone());
-                                self.not_parsed.clear();
-                                self.status = Status::moves;
-                                self.last_char = c;
-                                continue;
-                            } else {
-                                self.not_parsed += &c.to_string();
-                                self.last_char = c;
-                                continue;
-                            }
+                            self.parse_move(c);
+                            self.last_char = c;
+                            continue;
                         }
 
-/*
-                        if (status == Status.numericAnnotationGlyph) {
-                            if (!Character.isDigit(c)) {
-                                if (buffer.length() > 0) {
-                                    List<NAG> moveNags = nags.get(lastMoveIndex);
-                                    if (moveNags == null) {
-                                        moveNags = new ArrayList<NAG>();
-                                        nags.put(lastMoveIndex, moveNags);
-                                    }
-                                    moveNags.add(NAG.getNAG("$" + buffer));
-                                }
-                                buffer = new StringBuffer();
-                                status = Status.moves;
-                                continue;
-                            } else {
-                                buffer.append(c);
-                            }
+                        if self.status == Status::numericAnnotationGlyph {
+                            self.parse_numeric_annotation_glyph(c);
+                            self.last_char = c;
+                            continue;
                         }
-*/
 
                         if self.status == Status::moves {
                             if c == '{' {
