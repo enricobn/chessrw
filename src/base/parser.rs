@@ -4,6 +4,8 @@ use std::io::BufRead;
 use std::char;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::str::FromStr;
+use base::tag::*;
 
 pub struct ChessParserBuilder {
 
@@ -64,7 +66,37 @@ pub struct ChessParserIterator {
     variations: HashMap<Int,Vec<String>>,
     after_variations_comments: HashMap<Int,HashMap<Int,String>>,
     comments: HashMap<Int,String>,
+    tag_key: Option<String>,
+    tag_value: Option<String>,
+    reason: GameResultReason,
+    result_from_tag: String,
 }
+
+enum GameResultReason {
+    abandoned,
+    adjudication,
+    death,
+    emergency,
+    normal,
+    rules_infraction,
+    time_forfait,
+    undeterminated
+}
+
+fn result_from_pgn(s: String) -> Result<GameResultReason, ()> {
+    match s.as_ref() {
+        "abandoned" => Ok(GameResultReason::abandoned),
+        "adjudication" => Ok(GameResultReason::adjudication),
+        "death" => Ok(GameResultReason::death),
+        "emergency" => Ok(GameResultReason::emergency),
+        "normal" => Ok(GameResultReason::normal),
+        "rules infraction" => Ok(GameResultReason::rules_infraction),
+        "time forfait" => Ok(GameResultReason::time_forfait),
+        "undeterminated" => Ok(GameResultReason::undeterminated),
+        _ => Err(()),
+    }
+}
+
 
 impl ChessParserIterator {
 
@@ -72,7 +104,8 @@ impl ChessParserIterator {
         return ChessParserIterator{file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
             curr_move: String::new(), status: Status::headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), resultFromMoves: String::new(), tags: HashMap::new(), end_parse: false,
-            variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new()};
+            variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
+            tag_key: None, tag_value: None, reason: GameResultReason::normal, result_from_tag: "".to_string()};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -170,6 +203,39 @@ impl ChessParserIterator {
             self.status = Status::moves;
         } else if c == '\n' {
             self.not_parsed += " ";
+        } else {
+            self.not_parsed += &c.to_string();
+        }
+    }
+
+    fn parse_heading(&mut self, c: char) {
+        if c == ']' {
+            match self.tag_key {
+                Some(ref tag_key) => {
+                    match self.tag_value {
+                        Some(ref tag_value) => {
+                            self.tags.insert(tag_key.clone(), tag_value.clone());
+                            if *tag_key == Tag::Termination.to_string() {
+                                // TODO check result of result_from_pgn, avoid clone
+                                self.reason = result_from_pgn(tag_value.clone()).unwrap();
+                            } else if *tag_key == Tag::Result.to_string() {
+                                self.result_from_tag = tag_value.clone();
+                            }        
+                        },
+                        _ => (),
+                    }
+                },
+                _ => (),
+            }
+            self.status = Status::headings;
+            self.tag_key = None;
+            self.tag_value = None;
+            self.not_parsed.clear();
+        } else if c == '"' {
+            self.tag_key = Some(self.not_parsed.clone());
+            self.status = Status::headingValue;
+            self.not_parsed.clear();
+        } else if c.is_whitespace() {
         } else {
             self.not_parsed += &c.to_string();
         }
@@ -281,6 +347,10 @@ impl Iterator for ChessParserIterator {
                             } else {
                                 self.status = Status::moves;
                             }
+                        }
+
+                        if self.status == Status::heading {
+                            self.parse_heading(c);
                         }
 
                         // ...
