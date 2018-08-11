@@ -70,6 +70,7 @@ pub struct ChessParserIterator {
     tag_value: Option<String>,
     reason: GameResultReason,
     result_from_tag: String,
+    variation_count: i32,
 }
 
 enum GameResultReason {
@@ -105,7 +106,8 @@ impl ChessParserIterator {
             curr_move: String::new(), status: Status::headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), resultFromMoves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
-            tag_key: None, tag_value: None, reason: GameResultReason::normal, result_from_tag: "".to_string()};
+            tag_key: None, tag_value: None, reason: GameResultReason::normal, result_from_tag: "".to_string(),
+            variation_count: 0};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -241,6 +243,32 @@ impl ChessParserIterator {
         }
     }
 
+    fn parse_variation(&mut self, c: char) {
+        if c == '(' {
+            self.variation_count += 1;
+            self.not_parsed += &c.to_string();
+        } else if c == ')' {
+            let last_move_index = self.moves.last_index();
+            self.variation_count -= 1;
+            if self.variation_count < 0 {
+                let movesVariations = match self.variations.entry(last_move_index) {
+                    Entry::Occupied(o) => o.into_mut(),
+                    Entry::Vacant(v) => {
+                        v.insert(Vec::new())
+                    }
+                };
+                movesVariations.push(self.not_parsed.trim_right().to_string());
+                self.not_parsed.clear();
+                self.status = Status::moves;
+                self.variation_count = 0;
+            }
+        } else if c == '\n' {
+            self.not_parsed += " ";
+        } else {
+            self.not_parsed += &c.to_string();
+        }
+    }
+
 }
 
 trait Sizable<T> {
@@ -334,6 +362,11 @@ impl Iterator for ChessParserIterator {
 
                         if self.status == Status::comment {
                             self.parse_comments(c);
+                            continue;
+                        }
+
+                        if self.status == Status::variation {
+                            self.parse_variation(c);
                             continue;
                         }
 
