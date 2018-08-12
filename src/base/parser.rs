@@ -72,6 +72,7 @@ pub struct ChessParserIterator {
     result_from_tag: String,
     variation_count: i32,
     nags: HashMap<Int,Vec<String>>,
+    ch: char,
 }
 
 enum GameResultReason {
@@ -108,7 +109,7 @@ impl ChessParserIterator {
             not_parsed: String::new(), resultFromMoves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
             tag_key: None, tag_value: None, reason: GameResultReason::normal, result_from_tag: "".to_string(),
-            variation_count: 0, nags: HashMap::new()};
+            variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap()};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -124,7 +125,7 @@ impl ChessParserIterator {
             self.not_parsed.clear();
             self.status = Status::moves;
         // the file is ended just after the result
-        } else if (self.status == Status::gameResult && self.not_parsed.len() > 0) {
+        } else if self.status == Status::gameResult && self.not_parsed.len() > 0 {
             self.resultFromMoves = self.not_parsed.clone();
             // TODO check if I need a new instance
             self.not_parsed.clear();
@@ -306,7 +307,7 @@ impl ChessParserIterator {
         self.moves.clear(); 
         self.curr_move.clear();
         self.status = Status::headings;
-        self.last_char = char::from_digit(0, 10).unwrap();
+        // self.last_char = char::from_digit(0, 10).unwrap();
         self.not_parsed.clear();
         self.resultFromMoves.clear();
         self.tags.clear();
@@ -372,21 +373,30 @@ impl Iterator for ChessParserIterator {
             let count = self.file_reader.read_line(&mut self.buf);
             
             if count.unwrap() <= 0 {
-                //if self.moves.is_empty() {
+                if self.moves.is_empty() {
                     return None;
-                //} else {
-                    // TODO empty vector
-                //    return Some(ChessGame{moves: Vec::new()})
-                //}
+                } else {
+                    let (_, game) = self.get_game();
+                    if game.is_some() {
+                        return game;
+                    }
+                }
             } else {
                     let line = self.buf.to_string();
 
                     for c in line.chars() {
+
+                        if c == '\r' {
+                            continue;
+                        }
+
+                        self.last_char = self.ch.clone();
+                        self.ch = c.clone();
                         if self.status == Status::ready {
                             if !c.is_whitespace() {
                                 self.status = Status::headings;
                             } else {
-                                self.last_char = c;
+                                // self.last_char = c;
                                 continue;
                             }
                         }
@@ -414,13 +424,13 @@ impl Iterator for ChessParserIterator {
 
                         if self.status == Status::comment {
                             self.parse_comments(c);
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
                         if self.status == Status::variation {
                             self.parse_variation(c);
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
@@ -428,10 +438,10 @@ impl Iterator for ChessParserIterator {
                             if c == '[' {
                                 self.not_parsed.clear();
                                 self.status = Status::heading;
-                                self.last_char = c;
+                                // self.last_char = c;
                                 continue;
                             } else if c.is_whitespace() {
-                                self.last_char = c;
+                                // self.last_char = c;
                                 continue;
                             } else {
                                 self.status = Status::moves;
@@ -440,7 +450,7 @@ impl Iterator for ChessParserIterator {
 
                         if self.status == Status::heading {
                             self.parse_heading(c);
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
@@ -464,7 +474,7 @@ impl Iterator for ChessParserIterator {
                             } else {
                                 self.not_parsed += &c.to_string();
                             }
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
                         
@@ -476,7 +486,7 @@ impl Iterator for ChessParserIterator {
                             } else {
                                 self.not_parsed += &c.to_string();
                             }
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
@@ -486,19 +496,19 @@ impl Iterator for ChessParserIterator {
                                 self.status = Status::move_;
                                 self.not_parsed += &c.to_string();
                             }
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
                         if self.status == Status::move_ {
                             self.parse_move(c);
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
                         if self.status == Status::numericAnnotationGlyph {
                             self.parse_numeric_annotation_glyph(c);
-                            self.last_char = c;
+                            // self.last_char = c;
                             continue;
                         }
 
@@ -522,7 +532,7 @@ impl Iterator for ChessParserIterator {
                                 self.not_parsed += &c.to_string();
                             }
                         }
-                        self.last_char = c;
+                        // self.last_char = c;
 
                     //println!("{}", line);
                 }
