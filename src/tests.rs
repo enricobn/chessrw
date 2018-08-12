@@ -15,11 +15,7 @@ fn it_works() {
 
     let mut count = 0;
     for game in p.parse(file.unwrap()) {
-        if count == 0 {
-            for move_ in game.moves {
-                println!("{}", move_);
-            }
-        }
+        println!("{} vs {} -> {}", game.tags["White"], game.tags["Black"], game.game_result);
         count += 1;
     }
     println!("{} games", count);

@@ -184,7 +184,8 @@ impl ChessParserIterator {
             }
         }
         */
-        let result = Some(ChessGame{moves: self.moves.clone()});
+        let result = Some(ChessGame{moves: self.moves.clone(), tags: self.tags.clone(), 
+            game_result: self.resultFromMoves.clone()});
         self.clear();
         return (false, result)
     }
@@ -544,5 +545,7 @@ impl Iterator for ChessParserIterator {
 }
 
 pub struct ChessGame {
-    pub moves: Vec<String>
+    pub moves: Vec<String>,
+    pub tags: HashMap<String,String>,
+    pub game_result: String
 }
