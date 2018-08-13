@@ -13,9 +13,13 @@ fn it_works() {
 
     let file = File::open("testresources/kramnik.pgn");
 
+    let unknown = "Unknown".to_string();
+
     let mut count = 0;
     for game in p.parse(file.unwrap()) {
-        println!("{} vs {} -> {}", game.tags["White"], game.tags["Black"], game.game_result);
+        let white = game.tags.get("White").unwrap_or(&unknown);
+        let black = game.tags.get("Black").unwrap_or(&unknown);
+        println!("{} vs {} -> {}", white, black, game.game_result);
         count += 1;
     }
     println!("{} games", count);

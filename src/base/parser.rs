@@ -373,6 +373,11 @@ impl Iterator for ChessParserIterator {
         loop {
             let count = self.file_reader.read_line(&mut self.buf);
             
+            if count.is_err() {
+                // TODO
+                continue;
+            }
+
             if count.unwrap() <= 0 {
                 if self.moves.is_empty() {
                     return None;
