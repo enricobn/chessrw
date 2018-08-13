@@ -2,11 +2,12 @@
 #[cfg(test)]
 
 use base::parser::*;
+use base::writer::*;
 use std::fs::File;
+use std::collections::HashMap;
 
 #[test]
-fn it_works() {
-    //assert_eq!(2 + 2, 4);
+fn parse_kramnik() {
     let builder = ChessParserBuilder::new();
 
     let p = builder.build();
@@ -25,3 +26,23 @@ fn it_works() {
     println!("{} games", count);
     assert_eq!(count, 40);
 }
+
+#[test]
+fn write_kramnik() {
+    let chess_parser_builder = ChessParserBuilder::new();
+
+    let p = chess_parser_builder.build();
+
+    let file_to_read = File::open("testresources/kramnik.pgn");
+
+    let file_to_write = File::create("testresources/kramnik_write.pgn");
+    let chess_writer_builder = ChessWriterBuilder{};
+
+    let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
+    
+    for game in p.parse(file_to_read.unwrap()) {
+        chess_writer.write(&game);
+    }
+
+}
+

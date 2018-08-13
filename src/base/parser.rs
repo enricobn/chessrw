@@ -4,7 +4,6 @@ use std::io::BufRead;
 use std::char;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::str::FromStr;
 use base::tag::*;
 
 pub struct ChessParserBuilder {
@@ -553,4 +552,12 @@ pub struct ChessGame {
     pub moves: Vec<String>,
     pub tags: HashMap<String,String>,
     pub game_result: String
+}
+
+impl ChessGame {
+
+    pub fn get_tags(&self) -> &HashMap<String,String> {
+        &self.tags
+    }
+
 }
