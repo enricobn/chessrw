@@ -24,42 +24,42 @@ impl FENParser {
         let mut file = 'a';
         let mut offset = 0;
         //Chessboard chessboard = new Chessboard();
-        let mut dataType = 0;
-        let mut activeColor = ChessColor::White;
-        let mut whiteKingSideCastling = false;
-        let mut blackKingSideCastling = false;
+        let mut status = 0;
+        let mut active_color = ChessColor::White;
+        let mut white_king_side_castling = false;
+        let mut black_king_side_castling = false;
         let mut whiteQueenSideCastling = false;
-        let mut blackQueenSideCastling = false;
-        let mut enPassantTargetSquareString = String::new();
+        let mut black_queen_side_castling = false;
+        let mut en_passant_target_square_string = String::new();
 //        Square enPassantTargetSquare = null;
-        let mut halfMoveClockString = String::new();
-        let mut halfMoveClock = 0;
-        let mut fullMoveNumberString = String::new();
-        let mut fullMoveNumber = 1;
+        let mut half_move_clock_string = String::new();
+        let mut half_move_clock = 0;
+        let mut full_move_number_string = String::new();
+        let mut full_move_number = 1;
 
         for c in fen.chars() {
             offset += 1;
             
             if c == ' ' {
-                dataType += 1;
+                status += 1;
                 continue;
             // skip CR LF
             } else if c <= '\n' {
                 continue;
             }
 
-            if dataType == 0 {
-                     //new rank
+            if status == 0 {
+                //new rank
                 if c == '/' {
                     rank -= 1;
                     file = 'a';
-                    //empty cells
-                }else if c >= '1' && c <= '8' {
+                //empty cells
+                } else if c >= '1' && c <= '8' {
                     let mut file_i = file as u8;
                     file_i += c.to_string().parse::<u8>().unwrap();
                     file = file_i as char;
                 //finally a piece
-                }else{
+                } else {
                     /*
                     try{
                         Piece piece = pieceFromString(new String(cbuf));
@@ -76,38 +76,38 @@ impl FENParser {
                     file = file_i as char;
                 }
 
-            } else if dataType == 1 {
+            } else if status == 1 {
                 if c == 'b' {
-                    activeColor = ChessColor::Black;
+                    active_color = ChessColor::Black;
                 }else{
-                    activeColor = ChessColor::White;
+                    active_color = ChessColor::White;
                 }
-            } else if dataType == 2 {
+            } else if status == 2 {
                 if c == 'K' {
-                    whiteKingSideCastling = true;
+                    white_king_side_castling = true;
                 } else if c == 'k' {
-                    blackKingSideCastling = true;
+                    black_king_side_castling = true;
                 } else if c == 'Q' {
                     whiteQueenSideCastling = true;
                 } else if c == 'q' {
-                    blackQueenSideCastling = true;
+                    black_queen_side_castling = true;
                 } else if c == '-' {
                 } else {
                     return Result::Err(format!("Unknown castling information at offset {} ({}).", 
                         offset, c));
                 }
 
-            } else if dataType == 3 {
+            } else if status == 3 {
                 if c != '-' {
-                    enPassantTargetSquareString.push(c);
+                    en_passant_target_square_string.push(c);
                 }
-            } else if dataType == 4 {
+            } else if status == 4 {
                 if c != '-' {
-                    halfMoveClockString.push(c);
+                    half_move_clock_string.push(c);
                 }
-            } else if dataType == 5 {
+            } else if status == 5 {
                 if c != '-' {
-                    fullMoveNumberString.push(c);
+                    full_move_number_string.push(c);
                 }
             }
         }
@@ -125,26 +125,26 @@ impl FENParser {
         }
         */
         
-        if halfMoveClockString.len() > 0 {
-            match halfMoveClockString.parse::<u16>() {
-                Ok(num) => halfMoveClock = num,
+        if half_move_clock_string.len() > 0 {
+            match half_move_clock_string.parse::<u16>() {
+                Ok(num) => half_move_clock = num,
                 Err(_) => 
                     return Result::Err(format!("Unknown half move clock ({}).", 
-                        halfMoveClockString))
+                        half_move_clock_string))
             }
         }
 
-        if fullMoveNumberString.len() > 0 {
-            match fullMoveNumberString.parse::<u16>() {
-                Ok(num) => fullMoveNumber = num,
+        if full_move_number_string.len() > 0 {
+            match full_move_number_string.parse::<u16>() {
+                Ok(num) => full_move_number = num,
                 Err(_) => 
                     return Result::Err(format!("Unknown full move number ({}).", 
-                        halfMoveClockString))
+                        half_move_clock_string))
             }
         }
 
-        Result::Ok(ChessPosition{active_color: activeColor, half_move_clock: halfMoveClock,
-            full_move_number: fullMoveNumber})
+        Result::Ok(ChessPosition{active_color: active_color, half_move_clock: half_move_clock,
+            full_move_number: full_move_number})
     }
 
 }
