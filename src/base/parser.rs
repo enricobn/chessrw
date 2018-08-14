@@ -49,7 +49,7 @@ impl ChessParserImpl {
 
 }
 
-type Int = u64;
+type Int = i16;
 
 pub struct ChessParserIterator {
     file_reader: BufReader<File>,
@@ -183,7 +183,9 @@ impl ChessParserIterator {
             }
         }
         */
-        let result = Some(ChessGame{moves: self.moves.clone(), tags: self.tags.clone(), 
+        let result = Some(ChessGame{tags: self.tags.clone(), moves: self.moves.clone(), 
+            comments: self.comments.clone(), variations: self.variations.clone(),
+            after_variations_comments: self.after_variations_comments.clone(),
             game_result: self.resultFromMoves.clone()});
         self.clear();
         return (false, result)
@@ -549,9 +551,12 @@ impl Iterator for ChessParserIterator {
 }
 
 pub struct ChessGame {
-    pub moves: Vec<String>,
-    pub tags: HashMap<String,String>,
-    pub game_result: String
+    tags: HashMap<String,String>,
+    moves: Vec<String>,
+    comments: HashMap<Int,String>,
+    variations: HashMap<Int,Vec<String>>,
+    after_variations_comments: HashMap<Int,HashMap<Int,String>>,
+    game_result: String,
 }
 
 impl ChessGame {
@@ -560,4 +565,19 @@ impl ChessGame {
         &self.tags
     }
 
+    pub fn get_moves(&self) -> &Vec<String> {
+        &self.moves
+    }
+
+    pub fn get_before_moves_comment(&self) -> Option<&String> {
+        self.comments.get(&-1).clone()
+    }
+
+    pub fn get_comment(&self, after_move: Int) -> Option<&String> {
+        self.comments.get(&after_move).clone()
+    }
+
+    pub fn get_game_result(&self) -> &String {
+        &self.game_result
+    }
 }

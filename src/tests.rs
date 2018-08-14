@@ -3,6 +3,7 @@
 
 use base::parser::*;
 use base::writer::*;
+use base::fen::*;
 use std::fs::File;
 use std::collections::HashMap;
 
@@ -18,9 +19,9 @@ fn parse_kramnik() {
 
     let mut count = 0;
     for game in p.parse(file.unwrap()) {
-        let white = game.tags.get("White").unwrap_or(&unknown);
-        let black = game.tags.get("Black").unwrap_or(&unknown);
-        println!("{} vs {} -> {}", white, black, game.game_result);
+        let white = game.get_tags().get("White").unwrap_or(&unknown);
+        let black = game.get_tags().get("Black").unwrap_or(&unknown);
+        println!("{} vs {} -> {}", white, black, game.get_game_result());
         count += 1;
     }
     println!("{} games", count);
@@ -43,6 +44,16 @@ fn write_kramnik() {
     for game in p.parse(file_to_read.unwrap()) {
         chess_writer.write(&game);
     }
+}
 
+#[test]
+fn fen_parse() {
+    let fen_parser_builder = FENParserBuilder::new();
+    let fen_parser = fen_parser_builder.build();
+    let chess_position = fen_parser.parse("8/8/7p/5Kpk/8/7P/6P1/8 w - - 0 1").unwrap();
+    
+    assert_eq!(chess_position.active_color, ChessColor::White);
+    assert_eq!(chess_position.half_move_clock, 0);
+    assert_eq!(chess_position.full_move_number, 1);
 }
 
