@@ -90,15 +90,11 @@ impl FENParser {
                 } else if c == 'Q' {
                     whiteQueenSideCastling = true;
                 } else if c == 'q' {
-                        blackQueenSideCastling = true;
+                    blackQueenSideCastling = true;
                 } else if c == '-' {
                 } else {
-                    // TODO 
-                    /*
-                        throw new IllegalFormatException(
-                            "Unknown castling information at offset " + 
-                            offset + " (" + new String(cbuf) + ")");
-                    */
+                    return Result::Err(format!("Unknown castling information at offset {} ({}).", 
+                        offset, c));
                 }
 
             } else if dataType == 3 {
@@ -132,8 +128,8 @@ impl FENParser {
         if halfMoveClockString.len() > 0 {
             match halfMoveClockString.parse::<u16>() {
                 Ok(num) => halfMoveClock = num,
-                Err(e) => 
-                    return Result::Err(format!("Unknown half move clock ({})", 
+                Err(_) => 
+                    return Result::Err(format!("Unknown half move clock ({}).", 
                         halfMoveClockString))
             }
         }
@@ -141,8 +137,8 @@ impl FENParser {
         if fullMoveNumberString.len() > 0 {
             match fullMoveNumberString.parse::<u16>() {
                 Ok(num) => fullMoveNumber = num,
-                Err(e) => 
-                    return Result::Err(format!("Unknown full move number ({})", 
+                Err(_) => 
+                    return Result::Err(format!("Unknown full move number ({}).", 
                         halfMoveClockString))
             }
         }
