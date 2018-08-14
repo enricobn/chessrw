@@ -15,6 +15,7 @@ fn parse_kramnik() {
 
     let file = File::open("testresources/kramnik.pgn");
 
+/*
     let unknown = "Unknown".to_string();
 
     let mut count = 0;
@@ -25,7 +26,8 @@ fn parse_kramnik() {
         count += 1;
     }
     println!("{} games", count);
-    assert_eq!(count, 40);
+    */
+    assert_eq!(p.parse(file.unwrap()).count(), 40);
 }
 
 #[test]
@@ -36,6 +38,7 @@ fn write_kramnik() {
 
     let file_to_read = File::open("testresources/kramnik.pgn");
 
+    // TODO create folder tmp in target if it does not exists and write the file there
     let file_to_write = File::create("testresources/kramnik_write.pgn");
     let chess_writer_builder = ChessWriterBuilder{};
 
