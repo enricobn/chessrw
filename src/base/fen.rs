@@ -28,7 +28,7 @@ impl FENParser {
         let mut active_color = ChessColor::White;
         let mut white_king_side_castling = false;
         let mut black_king_side_castling = false;
-        let mut whiteQueenSideCastling = false;
+        let mut white_queen_side_castling = false;
         let mut black_queen_side_castling = false;
         let mut en_passant_target_square_string = String::new();
 //        Square enPassantTargetSquare = null;
@@ -88,7 +88,7 @@ impl FENParser {
                 } else if c == 'k' {
                     black_king_side_castling = true;
                 } else if c == 'Q' {
-                    whiteQueenSideCastling = true;
+                    white_queen_side_castling = true;
                 } else if c == 'q' {
                     black_queen_side_castling = true;
                 } else if c == '-' {
