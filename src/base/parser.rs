@@ -108,7 +108,7 @@ impl ChessParserIterator {
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
-            tag_key: None, tag_value: None, reason: GameResultReason::Normal, result_from_tag: "".to_string(),
+            tag_key: None, tag_value: None, reason: GameResultReason::Normal, result_from_tag: String::new(),
             variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap()};
     }
 
@@ -577,11 +577,11 @@ impl ChessGame {
     }
 
     pub fn get_before_moves_comment(&self) -> Option<&String> {
-        self.comments.get(&-1).clone()
+        self.comments.get(&-1)
     }
 
     pub fn get_comment(&self, after_move: Int) -> Option<&String> {
-        self.comments.get(&after_move).clone()
+        self.comments.get(&after_move)
     }
 
     pub fn get_game_result(&self) -> &String {
@@ -597,11 +597,11 @@ impl ChessGame {
     }
 
     pub fn get_nags(&self, after_move: Int) -> Option<&Vec<String>> {
-        self.nags.get(&after_move).clone()
+        self.nags.get(&after_move)
     }
 
     pub fn get_variations(&self, after_move: Int) -> Option<&Vec<String>> {
-        self.variations.get(&after_move).clone()
+        self.variations.get(&after_move)
     }
 
     pub fn get_after_variation_comment(&self, after_move: Int, after_variation_move: Int) -> Option<&String> {
