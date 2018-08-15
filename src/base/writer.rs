@@ -81,6 +81,20 @@ impl ChessWriter {
             */
             write!(&mut self.w, "{} ", mv);
 
+            match game.get_nags(m) {
+                Some(ns) => for n in ns {
+                    // TODO error
+                    write!(&mut self.w, "${} ", n).unwrap();
+                },
+                _ => ()
+            }
+
+            match game.get_comment(m) {
+                // TODO error
+                Some(s) => write!(&mut self.w, "{{{}}} ", s).unwrap(),
+                _ => ()
+            };
+
             /*
             List<MoveAnnotation> annotations = game.getAnnotations(m);
             
@@ -89,12 +103,7 @@ impl ChessWriter {
                     writer.write(annotation.getValue() + " ");
                 }
             }
-            
-            comment = game.getComment(m); 
-            if (comment != null) {
-                writer.write("{" + comment + "} ");
-            }
-            
+                        
             if (game.getVariations(m) != null) {
                 int i = 0;
                 for (String variation : game.getVariations(m)) {
@@ -106,6 +115,21 @@ impl ChessWriter {
                     i++;
                 }
             }*/
+
+            let mut i = 0;
+            match game.get_variations(m) {   
+                Some(vs) => 
+                    for v in vs {
+                        write!(&mut self.w, "({}) ", v);
+                        match game.get_after_variation_comment(m, i) {
+                            // TODO error
+                            Some(c) => write!(&mut self.w, "{{{}}}", c).unwrap(),
+                            _ => ()
+                        };
+                    i += 1;
+                },
+                _ => ()
+            }
             
             if active_color == ChessColor::White {
                 active_color = ChessColor::Black;

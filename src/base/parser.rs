@@ -184,10 +184,12 @@ impl ChessParserIterator {
             }
         }
         */
+
+        // TODO can I remove clone with a borrow?
         let result = Some(ChessGame{tags: self.tags.clone(), moves: self.moves.clone(), 
             comments: self.comments.clone(), variations: self.variations.clone(),
             after_variations_comments: self.after_variations_comments.clone(),
-            game_result: self.result_from_moves.clone()});
+            game_result: self.result_from_moves.clone(), nags: self.nags.clone()});
         self.clear();
         return (false, result)
     }
@@ -555,6 +557,7 @@ pub struct ChessGame {
     variations: HashMap<Int,Vec<String>>,
     after_variations_comments: HashMap<Int,HashMap<Int,String>>,
     game_result: String,
+    nags: HashMap<Int,Vec<String>>,
 }
 
 lazy_static! {
@@ -590,6 +593,21 @@ impl ChessGame {
             // TODO error handling
             Some(fen) => FEN_PARSER.parse(fen),
             _ => Result::Ok(ChessPosition::initial_position())
+        }
+    }
+
+    pub fn get_nags(&self, after_move: Int) -> Option<&Vec<String>> {
+        self.nags.get(&after_move).clone()
+    }
+
+    pub fn get_variations(&self, after_move: Int) -> Option<&Vec<String>> {
+        self.variations.get(&after_move).clone()
+    }
+
+    pub fn get_after_variation_comment(&self, after_move: Int, after_variation_move: Int) -> Option<&String> {
+        match self.after_variations_comments.get(&after_move) {
+            Some(avc) => avc.get(&after_variation_move),
+            _ => None
         }
     }
 }
