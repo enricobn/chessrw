@@ -5,6 +5,7 @@ use base::parser::*;
 use base::writer::*;
 use base::fen::*;
 use std::fs::File;
+use std::fs;
 use std::collections::HashMap;
 
 #[test]
@@ -38,8 +39,9 @@ fn write_kramnik() {
 
     let file_to_read = File::open("testresources/kramnik.pgn");
 
-    // TODO create folder tmp in target if it does not exists and write the file there
-    let file_to_write = File::create("testresources/kramnik_write.pgn");
+    fs::create_dir_all("target/tmp");
+
+    let file_to_write = File::create("target/tmp/kramnik_write.pgn");
     let chess_writer_builder = ChessWriterBuilder{};
 
     let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
