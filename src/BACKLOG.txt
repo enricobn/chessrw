@@ -1,0 +1,5 @@
+TODO
+-----
+- when writing, try to right justify at 80 chars
+- retain tags order
+- optimize (can I remove clone on creation of ChessGame?)
