@@ -155,6 +155,15 @@ pub struct ChessPosition {
     pub full_move_number: u16,
 }
 
+const INITIAL_POSITION: ChessPosition = 
+    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1};
+
+impl ChessPosition {
+    pub fn initial_position() -> ChessPosition {
+        INITIAL_POSITION
+    }
+}
+
 #[derive(Display,Debug,PartialEq)]
 pub enum ChessColor {
     White,

@@ -5,6 +5,7 @@ use std::char;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use base::tag::*;
+use base::fen::*;
 
 pub struct ChessParserBuilder {
 
@@ -389,159 +390,156 @@ impl Iterator for ChessParserIterator {
                     }
                 }
             } else {
-                    let line = self.buf.to_string();
+                let line = self.buf.to_string();
 
-                    for c in line.chars() {
+                for c in line.chars() {
 
-                        if c == '\r' {
+                    if c == '\r' {
+                        continue;
+                    }
+
+                    self.last_char = self.ch.clone();
+                    self.ch = c.clone();
+                    if self.status == Status::Ready {
+                        if !c.is_whitespace() {
+                            self.status = Status::Headings;
+                        } else {
+                            // self.last_char = c;
                             continue;
                         }
+                    }
 
-                        self.last_char = self.ch.clone();
-                        self.ch = c.clone();
-                        if self.status == Status::Ready {
-                            if !c.is_whitespace() {
-                                self.status = Status::Headings;
+                    if c == '\n' {
+                        if self.last_char == '\n' {
+                            // it's the new line after headings, so now there's moves
+                            if self.status == Status::Headings {
+                                self.status = Status::Moves;
                             } else {
-                                // self.last_char = c;
-                                continue;
-                            }
-                        }
+                                // it's the new line after end of moves, so I add the new game and prepare to parse another
 
-                        if c == '\n' {
-                            if self.last_char == '\n' {
-                                // it's the new line after headings, so now there's moves
-                                if self.status == Status::Headings {
-                                    self.status = Status::Moves;
-                                } else {
-                                    // it's the new line after end of moves, so I add the new game and prepare to parse another
+                                // if cancelled
+                                let (cancelled, game) = self.get_game();
+                                if cancelled {
+                                    self.end_parse = true;
+                                }
 
-                                    // if cancelled
-                                    let (cancelled, game) = self.get_game();
-                                    if cancelled {
-                                        self.end_parse = true;
-                                    }
-
-                                    if game.is_some() {
-                                        return game;
-                                    }
+                                if game.is_some() {
+                                    return game;
                                 }
                             }
                         }
+                    }
 
-                        if self.status == Status::Comment {
-                            self.parse_comments(c);
+                    if self.status == Status::Comment {
+                        self.parse_comments(c);
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::Variation {
+                        self.parse_variation(c);
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::Headings {
+                        if c == '[' {
+                            self.not_parsed.clear();
+                            self.status = Status::Heading;
                             // self.last_char = c;
                             continue;
-                        }
-
-                        if self.status == Status::Variation {
-                            self.parse_variation(c);
+                        } else if c.is_whitespace() {
                             // self.last_char = c;
                             continue;
+                        } else {
+                            self.status = Status::Moves;
                         }
+                    }
 
-                        if self.status == Status::Headings {
-                            if c == '[' {
-                                self.not_parsed.clear();
-                                self.status = Status::Heading;
-                                // self.last_char = c;
-                                continue;
-                            } else if c.is_whitespace() {
-                                // self.last_char = c;
-                                continue;
-                            } else {
-                                self.status = Status::Moves;
-                            }
+                    if self.status == Status::Heading {
+                        self.parse_heading(c);
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::HeadingValue {
+                        if c == '"' {
+                            self.tag_value = Some(self.not_parsed.clone());
+                            self.status = Status::Heading;
+                            self.not_parsed.clear();
+                        } else {
+                            self.not_parsed += &c.to_string();
                         }
+                    }
 
-                        if self.status == Status::Heading {
-                            self.parse_heading(c);
-                            // self.last_char = c;
-                            continue;
-                        }
-
-                        if self.status == Status::HeadingValue {
-                            if c == '"' {
-                                self.tag_value = Some(self.not_parsed.clone());
-                                self.status = Status::Heading;
-                                self.not_parsed.clear();
-                            } else {
-                                self.not_parsed += &c.to_string();
-                            }
-                        }
-
-                        if self.status == Status::MoveUnknown {
-                            if c == '.' {
-                                self.status = Status::MoveNumber;
-                                self.not_parsed.clear();
-                            } else if c == '-' || c == '*' {
-                                self.status = Status::GameResult;
-                                self.not_parsed += &c.to_string();
-                            } else {
-                                self.not_parsed += &c.to_string();
-                            }
-                            // self.last_char = c;
-                            continue;
-                        }
-                        
-                        if self.status == Status::GameResult {
-                            if c.is_whitespace() {
-                                self.result_from_moves = self.not_parsed.clone();
-                                self.not_parsed.clear();
-                                self.status = Status::Moves;
-                            } else {
-                                self.not_parsed += &c.to_string();
-                            }
-                            // self.last_char = c;
-                            continue;
-                        }
-
-                        if self.status == Status::MoveNumber {
-                            if c.is_whitespace() || c == '.' {
-                            } else {
-                                self.status = Status::Move;
-                                self.not_parsed += &c.to_string();
-                            }
-                            // self.last_char = c;
-                            continue;
-                        }
-
-                        if self.status == Status::Move {
-                            self.parse_move(c);
-                            // self.last_char = c;
-                            continue;
-                        }
-
-                        if self.status == Status::NumericAnnotationGlyph {
-                            self.parse_numeric_annotation_glyph(c);
-                            // self.last_char = c;
-                            continue;
-                        }
-
-                        if self.status == Status::Moves {
-                            if c == '{' {
-                                self.status = Status::Comment;
-                            } else if c == '(' {
-                                self.status = Status::Variation;
-                            } else if c == '$' {
-                                self.status = Status::NumericAnnotationGlyph;
-                            } else if c == '*' {
-                                self.status = Status::GameResult;
-                                self.not_parsed += &c.to_string();
-                            } else if c.is_digit(10) {
-                                self.status = Status::MoveUnknown;
-                                self.not_parsed += &c.to_string();
-                            } else if c.is_whitespace() {
-
-                            } else {
-                                self.status = Status::Move;
-                                self.not_parsed += &c.to_string();
-                            }
+                    if self.status == Status::MoveUnknown {
+                        if c == '.' {
+                            self.status = Status::MoveNumber;
+                            self.not_parsed.clear();
+                        } else if c == '-' || c == '*' {
+                            self.status = Status::GameResult;
+                            self.not_parsed += &c.to_string();
+                        } else {
+                            self.not_parsed += &c.to_string();
                         }
                         // self.last_char = c;
+                        continue;
+                    }
+                    
+                    if self.status == Status::GameResult {
+                        if c.is_whitespace() {
+                            self.result_from_moves = self.not_parsed.clone();
+                            self.not_parsed.clear();
+                            self.status = Status::Moves;
+                        } else {
+                            self.not_parsed += &c.to_string();
+                        }
+                        // self.last_char = c;
+                        continue;
+                    }
 
-                    //println!("{}", line);
+                    if self.status == Status::MoveNumber {
+                        if c.is_whitespace() || c == '.' {
+                        } else {
+                            self.status = Status::Move;
+                            self.not_parsed += &c.to_string();
+                        }
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::Move {
+                        self.parse_move(c);
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::NumericAnnotationGlyph {
+                        self.parse_numeric_annotation_glyph(c);
+                        // self.last_char = c;
+                        continue;
+                    }
+
+                    if self.status == Status::Moves {
+                        if c == '{' {
+                            self.status = Status::Comment;
+                        } else if c == '(' {
+                            self.status = Status::Variation;
+                        } else if c == '$' {
+                            self.status = Status::NumericAnnotationGlyph;
+                        } else if c == '*' {
+                            self.status = Status::GameResult;
+                            self.not_parsed += &c.to_string();
+                        } else if c.is_digit(10) {
+                            self.status = Status::MoveUnknown;
+                            self.not_parsed += &c.to_string();
+                        } else if c.is_whitespace() {
+
+                        } else {
+                            self.status = Status::Move;
+                            self.not_parsed += &c.to_string();
+                        }
+                    }
                 }
                 self.buf.clear();
             }
@@ -557,6 +555,12 @@ pub struct ChessGame {
     variations: HashMap<Int,Vec<String>>,
     after_variations_comments: HashMap<Int,HashMap<Int,String>>,
     game_result: String,
+}
+
+lazy_static! {
+    static ref FEN_PARSER: FENParser = {
+        FENParserBuilder::new().build()
+    };
 }
 
 impl ChessGame {
@@ -579,5 +583,13 @@ impl ChessGame {
 
     pub fn get_game_result(&self) -> &String {
         &self.game_result
+    }
+
+    pub fn initial_position(&self) -> Result<ChessPosition,String> {
+        match self.tags.get(&Tag::FEN.to_string()) {
+            // TODO error handling
+            Some(fen) => FEN_PARSER.parse(fen),
+            _ => Result::Ok(ChessPosition::initial_position())
+        }
     }
 }
