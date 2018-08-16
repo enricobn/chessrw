@@ -7,18 +7,32 @@ use std::collections::hash_map::Entry;
 use base::tag::*;
 use base::fen::*;
 
-pub struct ChessParserBuilder {
+#[derive(Clone)]
+pub struct ChessParserConfig {
+    ignore_comments: bool,
+    ignore_variations: bool,
+}
 
+pub struct ChessParserBuilder {
+    config: ChessParserConfig,
 }
 
 impl ChessParserBuilder {
 
     pub fn new() -> Self {
-        return ChessParserBuilder{};
+        return ChessParserBuilder{config: ChessParserConfig{ignore_comments: false, ignore_variations: false}};
+    }
+
+    pub fn ignore_comments(&mut self) {
+        self.config.ignore_comments = true;
+    }
+
+    pub fn ignore_variations(&mut self) {
+        self.config.ignore_variations = true;
     }
 
     pub fn build(&self) -> ChessParserImpl {
-        return ChessParserImpl::new();
+        return ChessParserImpl::new(self.config.clone());
     }
 
 }
@@ -30,22 +44,22 @@ pub trait ChessParser {
 }
 
 pub struct ChessParserImpl {
-    
+    config: ChessParserConfig,
 }
 
 impl ChessParser for ChessParserImpl {
 
     fn parse(&self, file: File) -> ChessParserIterator {
         let reader = BufReader::new(file);
-        return ChessParserIterator::new(reader);
+        return ChessParserIterator::new(self.config.clone(), reader);
     }
 
 }
 
 impl ChessParserImpl {
 
-    pub fn new() -> Self {
-        return ChessParserImpl{};
+    pub fn new(config: ChessParserConfig) -> Self {
+        return ChessParserImpl{config: config};
     }
 
 }
@@ -53,6 +67,7 @@ impl ChessParserImpl {
 type Int = i16;
 
 pub struct ChessParserIterator {
+    config: ChessParserConfig,
     file_reader: BufReader<File>,
     buf: String,
     moves: Vec<String>,
@@ -103,8 +118,8 @@ fn result_from_pgn(s: String) -> Result<GameResultReason, ()> {
 
 impl ChessParserIterator {
 
-    pub fn new(file_reader: BufReader<File>) -> Self {
-        return ChessParserIterator{file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
+    pub fn new(config: ChessParserConfig, file_reader: BufReader<File>) -> Self {
+        return ChessParserIterator{config: config, file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
@@ -196,21 +211,24 @@ impl ChessParserIterator {
 
     fn parse_comments(&mut self, c: char) {
         if c == '}' {
-            let last_move_index = self.moves.last_index();
-            let variations = self.variations.get(&last_move_index);
-            if variations.is_some() && variations.unwrap().len() > 0 {
-                let av_move_comments = match self.after_variations_comments.entry(last_move_index) {
-                    Entry::Occupied(o) => o.into_mut(),
-                    Entry::Vacant(v) => {
-                        v.insert(HashMap::new())
-                    }
-                };
-                av_move_comments.insert(self.variations[&last_move_index].last_index(), self.not_parsed.trim_right().to_string());
-            } else {
-                self.comments.insert(last_move_index, self.not_parsed.trim_right().to_string());
+            if !self.config.ignore_comments {
+                let last_move_index = self.moves.last_index();
+                let variations = self.variations.get(&last_move_index);
+                if variations.is_some() && variations.unwrap().len() > 0 {
+                    let av_move_comments = match self.after_variations_comments.entry(last_move_index) {
+                        Entry::Occupied(o) => o.into_mut(),
+                        Entry::Vacant(v) => {
+                            v.insert(HashMap::new())
+                        }
+                    };
+                    av_move_comments.insert(self.variations[&last_move_index].last_index(), self.not_parsed.trim_right().to_string());
+                } else {
+                    self.comments.insert(last_move_index, self.not_parsed.trim_right().to_string());
+                }
             }
             self.not_parsed.clear();
             self.status = Status::Moves;
+        } else if self.config.ignore_comments {
         } else if c == '\n' {
             self.not_parsed += " ";
         } else {
@@ -252,24 +270,29 @@ impl ChessParserIterator {
     }
 
     fn parse_variation(&mut self, c: char) {
-        if c == '(' {
-            self.variation_count += 1;
-            self.not_parsed += &c.to_string();
-        } else if c == ')' {
-            let last_move_index = self.moves.last_index();
+        if c == ')' {
             self.variation_count -= 1;
             if self.variation_count < 0 {
-                let moves_variations = match self.variations.entry(last_move_index) {
-                    Entry::Occupied(o) => o.into_mut(),
-                    Entry::Vacant(v) => {
-                        v.insert(Vec::new())
-                    }
-                };
-                moves_variations.push(self.not_parsed.trim_right().to_string());
+                if !self.config.ignore_variations {
+                    let last_move_index = self.moves.last_index();
+                    let moves_variations = match self.variations.entry(last_move_index) {
+                        Entry::Occupied(o) => o.into_mut(),
+                        Entry::Vacant(v) => {
+                            v.insert(Vec::new())
+                        }
+                    };
+                    moves_variations.push(self.not_parsed.trim_right().to_string());
+                }
                 self.not_parsed.clear();
                 self.status = Status::Moves;
                 self.variation_count = 0;
             }
+        } else if c == '(' {
+            self.variation_count += 1;
+            if !self.config.ignore_variations {
+                self.not_parsed += &c.to_string();
+            }
+        } else if self.config.ignore_variations {
         } else if c == '\n' {
             self.not_parsed += " ";
         } else {
@@ -323,7 +346,7 @@ impl ChessParserIterator {
         self.tag_key = None;
         self.tag_value = None;
         self.reason = GameResultReason::Normal;
-        self.result_from_tag = "".to_string();
+        self.result_from_tag = String::new();
         self.variation_count= 0;
         self.nags.clear();
     }
