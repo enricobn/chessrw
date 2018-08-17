@@ -624,6 +624,10 @@ impl ChessGame {
         self.comments.get(&-1)
     }
 
+    /** 
+     * # Arguments
+     * * `after_move` is zero based.
+     */
     pub fn get_comment(&self, after_move: Int) -> Option<&String> {
         self.comments.get(&after_move)
     }
@@ -640,14 +644,27 @@ impl ChessGame {
         }
     }
 
+    /** 
+     * # Arguments
+     * * `after_move` is zero based.
+     */
     pub fn get_nags(&self, after_move: Int) -> Option<&Vec<String>> {
         self.nags.get(&after_move)
     }
 
+    /** 
+     * # Arguments
+     * * `after_move` is zero based.
+     */
     pub fn get_variations(&self, after_move: Int) -> Option<&Vec<String>> {
         self.variations.get(&after_move)
     }
 
+    /** 
+     * # Arguments
+     * * `after_move` is zero based.
+     * * `after_variation_move` is zero based
+     */
     pub fn get_after_variation_comment(&self, after_move: Int, after_variation_move: Int) -> Option<&String> {
         match self.after_variations_comments.get(&after_move) {
             Some(avc) => avc.get(&after_variation_move),
