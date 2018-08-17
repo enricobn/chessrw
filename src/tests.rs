@@ -132,3 +132,19 @@ fn parse_comments_test() {
 
     assert_eq!("Another comment", comment.unwrap());
 }
+
+#[test]
+fn parse_variations_test() {
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+
+    let file = File::open("testresources/test.pgn");
+
+    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+
+    assert_eq!(50, games[3].get_moves().len());
+
+    let mut variations = games[3].get_variations(49);
+
+    assert_eq!("25... Qh4 $5 $11 {is interesting}", variations.unwrap()[0]);
+}
