@@ -4,8 +4,6 @@ TODO
 - flag to retain tags order
 - optimize (can I remove clone on creation of ChessGame?)
 - add more tests:
-  - games with no tags
-  - mix games with tags and no tags
   - games with comments
   - games with variations
   - games with comments and variations

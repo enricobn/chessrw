@@ -84,7 +84,7 @@ fn fen_parse() {
 }
 
 #[test]
-fn parse_test() {
+fn parse_no_tags_test() {
     let mut builder = ChessParserBuilder::new();
     let p = builder.build();
 
@@ -92,8 +92,25 @@ fn parse_test() {
 
     let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
 
-    assert_eq!(games.len(), 1);
-
     assert_eq!(5, games[0].get_moves().len());
+
+}
+
+#[test]
+fn parse_tags_test() {
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+
+    let file = File::open("testresources/test.pgn");
+
+    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+
+    assert_eq!(5, games[1].get_moves().len());
+
+    let tags = games[1].get_tags();
+
+    assert_eq!(1, tags.len());
+
+    assert_eq!("Test", tags["Event"]);
 
 }
