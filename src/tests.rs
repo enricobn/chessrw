@@ -1,4 +1,3 @@
-//extern crate chessparser;
 #[cfg(test)]
 
 use base::parser::*;
@@ -10,8 +9,9 @@ use std::collections::HashMap;
 
 #[test]
 fn parse_kramnik() {
-    let builder = ChessParserBuilder::new();
-
+    let mut builder = ChessParserBuilder::new();
+    builder.ignore_comments();
+    builder.ignore_variations();
     let p = builder.build();
 
     let file = File::open("testresources/kramnik.pgn");
@@ -52,6 +52,27 @@ fn write_kramnik() {
 }
 
 #[test]
+fn write_kramnik_ignore() {
+    let mut chess_parser_builder = ChessParserBuilder::new();
+    chess_parser_builder.ignore_comments();
+    chess_parser_builder.ignore_variations();
+    let p = chess_parser_builder.build();
+
+    let file_to_read = File::open("testresources/kramnik.pgn");
+
+    fs::create_dir_all("target/tmp");
+
+    let file_to_write = File::create("target/tmp/kramnik_write_ignore.pgn");
+    let chess_writer_builder = ChessWriterBuilder{};
+
+    let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
+    
+    for game in p.parse(file_to_read.unwrap()) {
+        chess_writer.write(&game);
+    }
+}
+
+#[test]
 fn fen_parse() {
     let fen_parser_builder = FENParserBuilder::new();
     let fen_parser = fen_parser_builder.build();
@@ -62,3 +83,17 @@ fn fen_parse() {
     assert_eq!(chess_position.full_move_number, 1);
 }
 
+#[test]
+fn parse_test() {
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+
+    let file = File::open("testresources/test.pgn");
+
+    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+
+    assert_eq!(games.len(), 1);
+
+    assert_eq!(5, games[0].get_moves().len());
+
+}

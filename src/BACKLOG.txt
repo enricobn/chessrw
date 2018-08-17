@@ -1,5 +1,19 @@
 TODO
 -----
 - when writing, try to right justify at 80 chars
-- retain tags order
+- flag to retain tags order
 - optimize (can I remove clone on creation of ChessGame?)
+- add more tests:
+  - games with no tags
+  - mix games with tags and no tags
+  - games with comments
+  - games with variations
+  - games with comments and variations
+  - filtering games with tag filter
+    - event tags that does not exist
+  - ignore comments
+  - ignore variations
+  - ignore comments and variations
+- it's possible to read the file char by char without read_line?
+- let bin to read a file and write another, with flags ignoring comments or variations
+  - then find a way to specify a tag filter and an overall filter
