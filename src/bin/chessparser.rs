@@ -10,7 +10,7 @@ pub fn main() {
     // *r != "0-1".to_string() && *r != "1-0".to_string());
     //let fun = |tags: &HashMap<String,String>| tags.get("Result").map_or_else(|| false, |r| *r == "0-0".to_string());
     //let fun = |tags: &HashMap<String,String>| tags.get("Result").is_none();
-
+    println!("Reding file {} ...", &args[1]);
 
     let mut builder = ChessParserBuilder::new();
     // builder.ignore_comments();
