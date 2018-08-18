@@ -39,7 +39,7 @@ fn write_kramnik() {
 
     let file_to_read = File::open("testresources/kramnik.pgn");
 
-    fs::create_dir_all("target/tmp");
+    fs::create_dir_all("target/tmp").unwrap();
 
     let file_to_write = File::create("target/tmp/kramnik_write.pgn");
     let chess_writer_builder = ChessWriterBuilder{};
@@ -47,7 +47,7 @@ fn write_kramnik() {
     let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
     
     for game in p.parse(file_to_read.unwrap()) {
-        chess_writer.write(&game);
+        chess_writer.write(&game).unwrap();
     }
 }
 
@@ -60,7 +60,7 @@ fn write_kramnik_ignore() {
 
     let file_to_read = File::open("testresources/kramnik.pgn");
 
-    fs::create_dir_all("target/tmp");
+    fs::create_dir_all("target/tmp").unwrap();
 
     let file_to_write = File::create("target/tmp/kramnik_write_ignore.pgn");
     let chess_writer_builder = ChessWriterBuilder{};
@@ -68,7 +68,7 @@ fn write_kramnik_ignore() {
     let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
     
     for game in p.parse(file_to_read.unwrap()) {
-        chess_writer.write(&game);
+        chess_writer.write(&game).unwrap();
     }
 }
 
@@ -85,7 +85,7 @@ fn fen_parse() {
 
 #[test]
 fn parse_no_tags_test() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");
@@ -97,7 +97,7 @@ fn parse_no_tags_test() {
 
 #[test]
 fn parse_tags_test() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");
@@ -115,7 +115,7 @@ fn parse_tags_test() {
 
 #[test]
 fn parse_comments_test() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");
@@ -135,7 +135,7 @@ fn parse_comments_test() {
 
 #[test]
 fn parse_variations_test() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");
@@ -144,7 +144,30 @@ fn parse_variations_test() {
 
     assert_eq!(50, games[3].get_moves().len());
 
-    let mut variations = games[3].get_variations(49);
+    let variations = games[3].get_variations(49);
 
     assert_eq!("25... Qh4 $5 $11 {is interesting}", variations.unwrap()[0]);
+}
+
+#[test]
+fn parse_with_tags_filter_test() {
+    // TODO simplify expression. Can I get rid of to_string?
+    //let fun = |tags: &HashMap<String,String>| tags.get("Event").map_or_else(|| false, |r| *r == "Test".to_string());
+    
+    let mut builder = ChessParserBuilder::new();
+    builder.tag_filter(&self::filter_tags_by_event);
+
+    let p = builder.build();
+
+    let file = File::open("testresources/test.pgn");
+
+    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+
+    assert_eq!(1, games.len());
+
+    assert_eq!(5, games[0].get_moves().len());
+}
+
+fn filter_tags_by_event(tags: &HashMap<String,String>) -> bool {
+    tags.get("Event").map_or_else(|| false, |r| *r == "Test".to_string())
 }

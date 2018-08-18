@@ -1,6 +1,7 @@
 1. d4 Nf6 2. c4 e6 3. Nc3 *
 
 [Event "Test"]
+
 1. d4 Nf6 2. c4 e6 3. Nc3 *
 
 1. d4 {A comment} Nf6 2. c4 e6 {Another comment} 3. Nc3 *

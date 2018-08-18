@@ -38,7 +38,7 @@ impl <'a> ChessParserBuilder<'a> {
     }
 
     pub fn build(&self) -> ChessParserImpl {
-        return ChessParserImpl::new(self.config.clone());
+        return ChessParserImpl::new(&self.config);
     }
 
 }
@@ -50,21 +50,21 @@ pub trait ChessParser<'a> {
 }
 
 pub struct ChessParserImpl<'a> {
-    config: ChessParserConfig<'a>,
+    config: &'a ChessParserConfig<'a>,
 }
 
 impl <'a> ChessParser<'a> for ChessParserImpl<'a> {
 
     fn parse(&self, file: File) -> ChessParserIterator {
         let reader = BufReader::new(file);
-        return ChessParserIterator::new(self.config.clone(), reader);
+        return ChessParserIterator::new(&self.config, reader);
     }
 
 }
 
 impl <'a> ChessParserImpl<'a> {
 
-    pub fn new(config: ChessParserConfig<'a>) -> Self {
+    pub fn new(config: &'a ChessParserConfig<'a>) -> Self {
         return ChessParserImpl::<'a>{config: config};
     }
 
@@ -73,7 +73,7 @@ impl <'a> ChessParserImpl<'a> {
 type Int = i16;
 
 pub struct ChessParserIterator<'a> {
-    config: ChessParserConfig<'a>,
+    config: &'a ChessParserConfig<'a>,
     file_reader: BufReader<File>,
     buf: String,
     moves: Vec<String>,
@@ -125,7 +125,7 @@ fn result_from_pgn(s: String) -> Result<GameResultReason, ()> {
 
 impl <'a> ChessParserIterator<'a> {
 
-    pub fn new(config: ChessParserConfig<'a>, file_reader: BufReader<File>) -> Self {
+    pub fn new(config: &'a ChessParserConfig<'a>, file_reader: BufReader<File>) -> Self {
         return ChessParserIterator{config: config, file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
@@ -448,6 +448,7 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             if self.status == Status::Headings {
                                 self.status = Status::Moves;
                                 self.skip_game = self.config.tag_filter.map_or_else(|| false, |f| !f(&self.tags));
+
                                 // if self.config.tag_filter.is_some() && !self.skip_game {
                                 //     println!("Result {}", self.tags.get("Result").unwrap_or(&"Unknown".to_string()));
                                 // }
@@ -498,7 +499,13 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             // self.last_char = c;
                             continue;
                         } else {
+                            self.skip_game = self.config.tag_filter.map_or_else(|| false, |f| !f(&self.tags));
+
                             self.status = Status::Moves;
+
+                            if self.skip_game {
+                                continue;
+                            }
                         }
                     }
 
