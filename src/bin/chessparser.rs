@@ -3,6 +3,7 @@ extern crate chessparser;
 use std::fs::File;
 use std::env;
 use chessparser::base::parser::*;
+use std::time::Instant;
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -21,5 +22,6 @@ pub fn main() {
     //let file = File::open("/home/enrico/Documents/PGN/ficsgamesdb_201801_standard_nomovetimes_14117.pgn");
     let file = File::open(&args[1]);
 
-    println!("{} games red.", p.parse(file.unwrap()).count());
+    let start = Instant::now();
+    println!("{} games red in {:?}.", p.parse(file.unwrap()).count(), start.elapsed());
 }
