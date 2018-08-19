@@ -183,7 +183,7 @@ impl <'a> ChessParserIterator<'a> {
             self.status = Status::Moves;
         } else if self.config.ignore_comments {
         } else if c == '\n' {
-            self.not_parsed += " ";
+            self.not_parsed.push(' ');
         } else {
             self.not_parsed.push(c);
         }
@@ -247,7 +247,7 @@ impl <'a> ChessParserIterator<'a> {
             }
         } else if self.config.ignore_variations {
         } else if c == '\n' {
-            self.not_parsed += " ";
+            self.not_parsed.push(' ');
         } else {
             self.not_parsed.push(c);
         }
