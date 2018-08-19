@@ -280,11 +280,9 @@ impl <'a> ChessParserIterator<'a> {
         self.moves.clear(); 
         self.curr_move.clear();
         self.status = Status::Headings;
-        // self.last_char = char::from_digit(0, 10).unwrap();
         self.not_parsed.clear();
         self.result_from_moves.clear();
         self.tags.clear();
-//        self.end_parse = false;
         self.variations.clear();
         self.after_variations_comments.clear();
         self.comments.clear();
@@ -377,7 +375,6 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                         if !c.is_whitespace() {
                             self.status = Status::Headings;
                         } else {
-                            // self.last_char = c;
                             continue;
                         }
                     }
@@ -388,10 +385,6 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             if self.status == Status::Headings {
                                 self.status = Status::Moves;
                                 self.skip_game = self.config.tag_filter.map_or_else(|| false, |f| !f(&self.tags));
-
-                                // if self.config.tag_filter.is_some() && !self.skip_game {
-                                //     println!("Result {}", self.tags.get("Result").unwrap_or(&"Unknown".to_string()));
-                                // }
                             } else {
 
                                 if self.skip_game {
@@ -419,13 +412,11 @@ impl <'a> Iterator for ChessParserIterator<'a> {
 
                     if self.status == Status::Comment {
                         self.parse_comments(c);
-                        // self.last_char = c;
                         continue;
                     }
 
                     if self.status == Status::Variation {
                         self.parse_variation(c);
-                        // self.last_char = c;
                         continue;
                     }
 
@@ -433,10 +424,8 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                         if c == '[' {
                             self.not_parsed.clear();
                             self.status = Status::Heading;
-                            // self.last_char = c;
                             continue;
                         } else if c.is_whitespace() {
-                            // self.last_char = c;
                             continue;
                         } else {
                             self.skip_game = self.config.tag_filter.map_or_else(|| false, |f| !f(&self.tags));
@@ -451,7 +440,6 @@ impl <'a> Iterator for ChessParserIterator<'a> {
 
                     if self.status == Status::Heading {
                         self.parse_heading(c);
-                        // self.last_char = c;
                         continue;
                     }
 
@@ -475,7 +463,6 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                         } else {
                             self.not_parsed.push(c);
                         }
-                        // self.last_char = c;
                         continue;
                     }
                     
@@ -487,7 +474,6 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                         } else {
                             self.not_parsed.push(c);
                         }
-                        // self.last_char = c;
                         continue;
                     }
 
@@ -497,19 +483,16 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.status = Status::Move;
                             self.not_parsed.push(c);
                         }
-                        // self.last_char = c;
                         continue;
                     }
 
                     if self.status == Status::Move {
                         self.parse_move(c);
-                        // self.last_char = c;
                         continue;
                     }
 
                     if self.status == Status::NumericAnnotationGlyph {
                         self.parse_numeric_annotation_glyph(c);
-                        // self.last_char = c;
                         continue;
                     }
 
