@@ -87,8 +87,8 @@ pub struct ChessParserIterator<'a> {
     variations: HashMap<Int,Vec<String>>,
     after_variations_comments: HashMap<Int,HashMap<Int,String>>,
     comments: HashMap<Int,String>,
-    tag_key: Option<String>,
-    tag_value: Option<String>,
+    tag_key: String,
+    tag_value: String,
     reason: GameResultReason,
     result_from_tag: String,
     variation_count: i32,
@@ -130,7 +130,7 @@ impl <'a> ChessParserIterator<'a> {
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
-            tag_key: None, tag_value: None, reason: GameResultReason::Normal, result_from_tag: String::new(),
+            tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, result_from_tag: String::new(),
             variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap(), skip_game: false};
     }
 
@@ -191,29 +191,21 @@ impl <'a> ChessParserIterator<'a> {
 
     fn parse_heading(&mut self, c: char) {
         if c == ']' {
-            match self.tag_key {
-                Some(ref tag_key) => {
-                    match self.tag_value {
-                        Some(ref tag_value) => {
-                            self.tags.insert(tag_key.clone(), tag_value.clone());
-                            if *tag_key == Tag::Termination.to_string() {
-                                // TODO check result of result_from_pgn, avoid clone
-                                self.reason = result_from_pgn(tag_value.clone()).unwrap();
-                            } else if *tag_key == Tag::Result.to_string() {
-                                self.result_from_tag = tag_value.clone();
-                            }        
-                        },
-                        _ => (),
-                    }
-                },
-                _ => (),
+            if !self.tag_key.is_empty() && !self.tag_value.is_empty() {
+                self.tags.insert(self.tag_key.clone(), self.tag_value.clone());
+                /*if *tag_key == Tag::Termination.to_string() {
+                    // TODO check result of result_from_pgn, avoid clone
+                    self.reason = result_from_pgn(tag_value.clone()).unwrap();
+                } else if *tag_key == Tag::Result.to_string() {
+                    self.result_from_tag = tag_value.clone();
+                }*/       
             }
             self.status = Status::Headings;
-            self.tag_key = None;
-            self.tag_value = None;
+            self.tag_key.clear();
+            self.tag_value.clear();
             self.not_parsed.clear();
         } else if c == '"' {
-            self.tag_key = Some(self.not_parsed.clone());
+            self.tag_key.push_str(&self.not_parsed);
             self.status = Status::HeadingValue;
             self.not_parsed.clear();
         } else if c.is_whitespace() {
@@ -296,8 +288,8 @@ impl <'a> ChessParserIterator<'a> {
         self.variations.clear();
         self.after_variations_comments.clear();
         self.comments.clear();
-        self.tag_key = None;
-        self.tag_value = None;
+        self.tag_key.clear();
+        self.tag_value.clear();
         self.reason = GameResultReason::Normal;
         self.result_from_tag = String::new();
         self.variation_count= 0;
@@ -465,7 +457,7 @@ impl <'a> Iterator for ChessParserIterator<'a> {
 
                     if self.status == Status::HeadingValue {
                         if c == '"' {
-                            self.tag_value = Some(self.not_parsed.clone());
+                            self.tag_value.push_str(&self.not_parsed);
                             self.status = Status::Heading;
                             self.not_parsed.clear();
                         } else {

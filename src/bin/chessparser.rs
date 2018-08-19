@@ -5,6 +5,10 @@ use std::env;
 use chessparser::base::parser::*;
 use std::time::Instant;
 
+/**
+ * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
+ * secs: 1, nanos: 891236467
+ */
 pub fn main() {
     let args: Vec<String> = env::args().collect();
         // let fun = |tags: &HashMap<String,String>| tags.get("Result").map_or_else(|| false, |r| *r != "1/2-1/2".to_string() && 
