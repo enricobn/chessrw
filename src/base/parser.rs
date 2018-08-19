@@ -185,7 +185,7 @@ impl <'a> ChessParserIterator<'a> {
         } else if c == '\n' {
             self.not_parsed += " ";
         } else {
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
         }
     }
 
@@ -218,7 +218,7 @@ impl <'a> ChessParserIterator<'a> {
             self.not_parsed.clear();
         } else if c.is_whitespace() {
         } else {
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
         }
     }
 
@@ -243,13 +243,13 @@ impl <'a> ChessParserIterator<'a> {
         } else if c == '(' {
             self.variation_count += 1;
             if !self.config.ignore_variations {
-                self.not_parsed += &c.to_string();
+                self.not_parsed.push(c);
             }
         } else if self.config.ignore_variations {
         } else if c == '\n' {
             self.not_parsed += " ";
         } else {
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
         }
     }
 
@@ -260,7 +260,7 @@ impl <'a> ChessParserIterator<'a> {
             self.not_parsed.clear();
             self.status = Status::Moves;
         } else {
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
         }
     }
 
@@ -276,10 +276,10 @@ impl <'a> ChessParserIterator<'a> {
                 };
                 move_nags.push(self.not_parsed.to_string());
             }
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
             self.status = Status::Moves;
         } else {
-            self.not_parsed += &c.to_string();
+            self.not_parsed.push(c);
         }
     }
 
@@ -469,7 +469,7 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.status = Status::Heading;
                             self.not_parsed.clear();
                         } else {
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         }
                     }
 
@@ -479,9 +479,9 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.not_parsed.clear();
                         } else if c == '-' || c == '*' {
                             self.status = Status::GameResult;
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         } else {
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         }
                         // self.last_char = c;
                         continue;
@@ -493,7 +493,7 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.not_parsed.clear();
                             self.status = Status::Moves;
                         } else {
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         }
                         // self.last_char = c;
                         continue;
@@ -503,7 +503,7 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                         if c.is_whitespace() || c == '.' {
                         } else {
                             self.status = Status::Move;
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         }
                         // self.last_char = c;
                         continue;
@@ -530,15 +530,15 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.status = Status::NumericAnnotationGlyph;
                         } else if c == '*' {
                             self.status = Status::GameResult;
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         } else if c.is_digit(10) {
                             self.status = Status::MoveUnknown;
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         } else if c.is_whitespace() {
 
                         } else {
                             self.status = Status::Move;
-                            self.not_parsed += &c.to_string();
+                            self.not_parsed.push(c);
                         }
                     }
                 }
