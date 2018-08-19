@@ -7,7 +7,7 @@ use std::time::Instant;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
- * secs: 1, nanos: 891236467
+ * secs: 1, nanos: 964518173
  */
 pub fn main() {
     let args: Vec<String> = env::args().collect();

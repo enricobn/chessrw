@@ -193,12 +193,12 @@ impl <'a> ChessParserIterator<'a> {
         if c == ']' {
             if !self.tag_key.is_empty() && !self.tag_value.is_empty() {
                 self.tags.insert(self.tag_key.clone(), self.tag_value.clone());
-                /*if *tag_key == Tag::Termination.to_string() {
+                if &self.tag_key as &str == "Termination" {
                     // TODO check result of result_from_pgn, avoid clone
-                    self.reason = result_from_pgn(tag_value.clone()).unwrap();
-                } else if *tag_key == Tag::Result.to_string() {
-                    self.result_from_tag = tag_value.clone();
-                }*/       
+                    self.reason = result_from_pgn(self.tag_value.clone()).unwrap();
+                } else if &self.tag_key as &str == "Result" {
+                    self.result_from_tag = self.tag_value.clone();
+                }
             }
             self.status = Status::Headings;
             self.tag_key.clear();
