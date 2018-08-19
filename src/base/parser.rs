@@ -154,65 +154,11 @@ impl <'a> ChessParserIterator<'a> {
             self.status = Status::Moves;
         }
 
-        /*
-        Date date = getDate(tags);
-        ChessPosition position = getPosition(tags);
-        
-        ChessGame game = new ChessGame(_gameType, date, position);
-        String result = resultFromMoves;
-        if (result == null) {
-            result = resultFromTag;
-        }
-        if (result != null) {
-            if (reason == null) {
-                game.end(GameResult.fromPGN(result));
-            } else {
-                game.end(new GameResult(GameResult.fromPGN(result).getWinner(), reason));
-            }
-        }
-        game.addTags(tags);
-        int i = 0;
-        for (String move : moves) {
-            SANMove sanMove = new SANMove(_gameType, game.getPosition(), move);
-            game.addMove(sanMove.getMove());
-            if (sanMove.getNAG() != null) {
-                game.addMoveAnnotation(i, sanMove.getNAG());
-            }
-            i++;
-        }
-
-        game.addNAGs(nags);
-        
-        for (Map.Entry<Integer, String> comment: comments.entrySet()) {
-            game.addComment(comment.getKey(), comment.getValue());
-        }
-        
-        for (Map.Entry<Integer, List<String>> entry: variations.entrySet()) {
-            for (String variation : entry.getValue()) {
-                game.addVariation(entry.getKey(), variation);
-            }
-        }
-        
-        for (Entry<Integer, Map<Integer, String>> avMoveComments: afterVariationsComments.entrySet()) {
-            for (Map.Entry<Integer, String> comment: avMoveComments.getValue().entrySet()) {
-                game.addAfterVariationComment(avMoveComments.getKey(), comment.getKey(), comment.getValue());
-            }
-        }
-        
-        games.add(game);
-        for (GamesImporterListener<ChessPosition> listener : _listeners) {
-            if (listener.gameLoaded(game)) {
-                return true;
-            }
-        }
-        */
-
         // TODO can I remove clone with a borrow?
         let result = Some(ChessGame{tags: self.tags.clone(), moves: self.moves.clone(), 
             comments: self.comments.clone(), variations: self.variations.clone(),
             after_variations_comments: self.after_variations_comments.clone(),
             game_result: self.result_from_moves.clone(), nags: self.nags.clone()});
-        self.clear();
         return (false, result)
     }
 
@@ -346,7 +292,7 @@ impl <'a> ChessParserIterator<'a> {
         self.not_parsed.clear();
         self.result_from_moves.clear();
         self.tags.clear();
-        self.end_parse = false;
+//        self.end_parse = false;
         self.variations.clear();
         self.after_variations_comments.clear();
         self.comments.clear();
@@ -404,6 +350,8 @@ impl <'a> Iterator for ChessParserIterator<'a> {
         if self.end_parse {
             return None;
         }
+
+        self.clear();
 
         loop {
             let count = self.file_reader.read_line(&mut self.buf);
