@@ -5,7 +5,7 @@ use std::fs::File;
 use chessparser::base::parser::*;
 use chessparser::base::writer::*;
 use std::time::Instant;
-use clap::{Arg, App};
+use clap::{Arg, App, ArgMatches};
 use std::collections::HashMap;
 
 /**
@@ -33,7 +33,11 @@ pub fn main() {
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
-    println!("Reding file {} ...", &input);
+    println!("Reading file {} ...", &input);
+
+    let tags_filter = TagsFilter::new(&matches);
+
+    let fun = |tags: &HashMap<String,String>| tags_filter.filter(tags);
 
     let mut builder = ChessParserBuilder::new();
     if matches.is_present("nocomments") {
@@ -44,19 +48,10 @@ pub fn main() {
         builder.ignore_variations();
     }
 
-    if matches.is_present("whitewins") {
-        builder.tag_filter(&::white_wins);
+    if tags_filter.apply() {
+        builder.tag_filter(&fun);
     }
 
-    if matches.is_present("blackwins") {
-        builder.tag_filter(&::black_wins);
-    }
-
-    if matches.is_present("draw") {
-        builder.tag_filter(&::draw);
-    }
-
-    //builder.tag_filter(&fun);
     let p = builder.build();
 
     let file = File::open(&input);
@@ -79,14 +74,29 @@ pub fn main() {
     }
 }
 
-fn white_wins(tags: &HashMap<String,String>) -> bool {
-    tags.get("Result").map_or_else(|| false, |r| r == "1-0")
+struct TagsFilter {
+    white_wins: bool,
+    black_wins: bool,
+    draw: bool,
 }
 
-fn black_wins(tags: &HashMap<String,String>) -> bool {
-    tags.get("Result").map_or_else(|| false, |r| r == "0-1")
-}
+impl TagsFilter {
 
-fn draw(tags: &HashMap<String,String>) -> bool {
-    tags.get("Result").map_or_else(|| false, |r| r == "1/2-1/2")
+    fn new(matches: &ArgMatches) -> TagsFilter {
+        TagsFilter{ white_wins: matches.is_present("whitewins"), black_wins: matches.is_present("blackwins"), 
+        draw: matches.is_present("draw")}
+    }
+
+    fn filter(&self, tags: &HashMap<String,String>) -> bool {
+        tags.get("Result").map_or_else(|| false, |r| 
+            self.white_wins && r == "1-0" ||
+            self.black_wins && r == "0-1" ||
+            self.draw && r == "1/2-1/2"
+        )
+    }
+
+    fn apply(&self) -> bool {
+        self.white_wins || self.black_wins || self.draw
+    }
+
 }
