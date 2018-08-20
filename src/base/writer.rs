@@ -29,24 +29,20 @@ impl ChessWriter {
 
     pub fn write(&mut self, game: &ChessGame) -> Result<(), Error> {
         for (tag_key,tag_value) in game.get_tags() {
-            write!(&mut self.w, "[{} \"{}\"]\n", tag_key, tag_value);
+            write!(&mut self.w, "[{} \"{}\"]\n", tag_key, tag_value)?;
         }
 
-        write!(&mut self.w, "\n");
+        write!(&mut self.w, "\n")?;
 
-        let ok = match game.get_before_moves_comment() {
-            Some(comment) => write!(&mut self.w, "{}\n", comment),
-            None => Result::Ok(())
+        match game.get_before_moves_comment() {
+            Some(comment) => write!(&mut self.w, "{}\n", comment)?,
+            None => ()
         };
 
-        if ok.is_err() {
-            return ok;
-        }
-
         // TODO error
-        self.export_moves(game);
+        self.export_moves(game)?;
 
-        write!(&mut self.w, " {}\n\n", game.get_game_result());
+        write!(&mut self.w, " {}\n\n", game.get_game_result())?;
 
         self.w.flush()
     }
@@ -63,35 +59,36 @@ impl ChessWriter {
         let mut full_move_number = position.full_move_number;
 
         if active_color == ChessColor::Black {
-             write!(&mut self.w, "{}... ", full_move_number);
+             write!(&mut self.w, "{}... ", full_move_number)?;
         }
 
         let mut m = -1;
         for mv in game.get_moves() {
             m += 1;
             if (m % 6) == 0 && m > 0 {
-                write!(&mut self.w, "\n");
+                write!(&mut self.w, "\n")?;
             }
             if active_color == ChessColor::White {
-                write!(&mut self.w, "{}. ", full_move_number);
+                write!(&mut self.w, "{}. ", full_move_number)?;
             }
+
 
 /*            Move move = game.getMoves().get(m);
             SANMove sanMove = new SANMove(game.getGameType(), position, move, "=", false);
             */
-            write!(&mut self.w, "{} ", mv);
+            write!(&mut self.w, "{} ", mv)?;
 
             match game.get_nags(m) {
                 Some(ns) => for n in ns {
                     // TODO error
-                    write!(&mut self.w, "${} ", n).unwrap();
+                    write!(&mut self.w, "${} ", n)?;
                 },
                 _ => ()
             }
 
             match game.get_comment(m) {
                 // TODO error
-                Some(s) => write!(&mut self.w, "{{{}}} ", s).unwrap(),
+                Some(s) => write!(&mut self.w, "{{{}}} ", s)?,
                 _ => ()
             };
 
@@ -120,10 +117,10 @@ impl ChessWriter {
             match game.get_variations(m) {   
                 Some(vs) => 
                     for v in vs {
-                        write!(&mut self.w, "({}) ", v);
+                        write!(&mut self.w, "({}) ", v)?;
                         match game.get_after_variation_comment(m, i) {
                             // TODO error
-                            Some(c) => write!(&mut self.w, "{{{}}}", c).unwrap(),
+                            Some(c) => write!(&mut self.w, "{{{}}}", c)?,
                             _ => ()
                         };
                     i += 1;
