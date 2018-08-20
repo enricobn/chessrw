@@ -7,3 +7,4 @@ authors = ["Enrico Benedetti <enrico_benedetti@yahoo.com>"]
 strum = "0.10.0"
 strum_macros = "0.10.0"
 lazy_static = "1.1.0"
+clap = "~2.32"
