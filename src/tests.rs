@@ -150,10 +150,7 @@ fn parse_variations_test() {
 }
 
 #[test]
-fn parse_with_tags_filter_test() {
-    // TODO simplify expression. Can I get rid of to_string?
-    //let fun = |tags: &HashMap<String,String>| tags.get("Event").map_or_else(|| false, |r| *r == "Test".to_string());
-    
+fn parse_with_tags_filter_test() {    
     let mut builder = ChessParserBuilder::new();
     builder.tag_filter(&self::filter_tags_by_event);
 
@@ -169,5 +166,5 @@ fn parse_with_tags_filter_test() {
 }
 
 fn filter_tags_by_event(tags: &HashMap<String,String>) -> bool {
-    tags.get("Event").map_or_else(|| false, |r| *r == "Test".to_string())
+    tags.get("Event").map_or_else(|| false, |r| r == "Test")
 }

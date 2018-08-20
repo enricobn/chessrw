@@ -5,10 +5,8 @@ TODO
 - optimize (can I remove clone on creation of ChessGame?)
 - add more tests:
   - filtering games with tag filter
-    - event tags that does not exist
+    - even tags that does not exist
   - ignore comments
   - ignore variations
   - ignore comments and variations
 - it's possible to read the file char by char without read_line?
-- let bin to read a file and write another, with flags ignoring comments or variations
-  - then find a way to specify a tag filter and an overall filter
