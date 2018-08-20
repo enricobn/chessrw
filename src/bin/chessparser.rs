@@ -29,6 +29,7 @@ pub fn main() {
             .arg(Arg::with_name("novariations").long("novariations"))
             .arg(Arg::with_name("whitewins").long("whitewins"))
             .arg(Arg::with_name("blackwins").long("blackwins"))
+            .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
             .get_matches();
 
@@ -74,20 +75,26 @@ pub fn main() {
     }
 }
 
-struct TagsFilter {
+struct TagsFilter<'a> {
     white_wins: bool,
     black_wins: bool,
     draw: bool,
+    min_ply_count: Option<&'a str>,
 }
 
-impl TagsFilter {
+impl <'a> TagsFilter<'a> {
 
-    fn new(matches: &ArgMatches) -> TagsFilter {
+    fn new(matches: &'a ArgMatches<'a>) -> TagsFilter {
         TagsFilter{ white_wins: matches.is_present("whitewins"), black_wins: matches.is_present("blackwins"), 
-        draw: matches.is_present("draw")}
+            draw: matches.is_present("draw"), min_ply_count: matches.value_of("minplycount")}
     }
 
     fn filter(&self, tags: &HashMap<String,String>) -> bool {
+        (!self.apply_result() || self.filter_result(tags)) &&
+        (!self.apply_ply_count() || self.filter_ply_count(tags))
+    }
+
+    fn filter_result(&self, tags: &HashMap<String,String>) -> bool {
         tags.get("Result").map_or_else(|| false, |r| 
             self.white_wins && r == "1-0" ||
             self.black_wins && r == "0-1" ||
@@ -95,8 +102,27 @@ impl TagsFilter {
         )
     }
 
+    fn filter_ply_count(&self, tags: &HashMap<String,String>) -> bool {
+        // TODO parse error
+        let min_ply_count = self.min_ply_count.unwrap().parse::<i32>().unwrap();
+        tags.get("PlyCount").map_or_else(|| false, |r| 
+            match r.parse::<i32>() {
+                Ok(ply_count) => ply_count >= min_ply_count,
+                _ => false
+            }
+        )
+    }
+
     fn apply(&self) -> bool {
+        self.apply_result() || self.apply_ply_count()
+    }
+
+    fn apply_result(&self) -> bool {
         self.white_wins || self.black_wins || self.draw
+    }
+
+    fn apply_ply_count(&self) -> bool {
+        self.min_ply_count.is_some()
     }
 
 }
