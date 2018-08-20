@@ -1,9 +1,9 @@
-extern crate chessparser;
+extern crate chessrw;
 extern crate clap;
 
 use std::fs::File;
-use chessparser::base::parser::*;
-use chessparser::base::writer::*;
+use chessrw::base::parser::*;
+use chessrw::base::writer::*;
 use std::time::Instant;
 use clap::{Arg, App, ArgMatches};
 use std::collections::HashMap;
