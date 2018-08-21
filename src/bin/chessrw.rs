@@ -7,6 +7,7 @@ use chessrw::base::writer::*;
 use std::time::Instant;
 use clap::{Arg, App, ArgMatches};
 use std::collections::HashMap;
+use std::fs;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
@@ -15,13 +16,13 @@ use std::collections::HashMap;
  * 2018 / January
  * No move times
  * 
- * Without write file nor other filters:
+ * Without write file nor other filters --noprogress:
  * 81886 games red in Duration {secs: 1, nanos: 877824005}.
  * 
- * Without write file and --blackwins:
+ * Without write file and --blackwins --noprogress:
  * 37541 games red in Duration { secs: 1, nanos: 286754330 }.
  */
-pub fn main() {
+pub fn main() -> std::io::Result<()> {
 
     let matches = 
         App::new("Chess read / write")
@@ -40,6 +41,7 @@ pub fn main() {
             .arg(Arg::with_name("blackwins").long("blackwins"))
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
+            .arg(Arg::with_name("noprogress").long("noprogress"))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
@@ -62,9 +64,15 @@ pub fn main() {
         builder.tag_filter(&fun);
     }
 
-    let p = builder.build();
-
+    let metadata = fs::metadata(&input)?;
     let file = File::open(&input);
+    println!("File size: {} bytes.", metadata.len());
+
+    if !matches.is_present("noprogress") {
+        builder.file_size(metadata.len());
+    }
+
+    let p = builder.build();
 
     let start = Instant::now();
     if matches.is_present("OUTPUT") {
@@ -82,6 +90,7 @@ pub fn main() {
     } else {
         println!("{} games red in {:?}.", p.parse(file.unwrap()).count(), start.elapsed());
     }
+    Result::Ok(())
 }
 
 struct TagsFilter<'a> {

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use base::tag::*;
 use base::fen::*;
+use indicatif::ProgressBar;
 
 #[derive(Clone)]
 pub struct ChessParserConfig<'a> {
@@ -13,6 +14,7 @@ pub struct ChessParserConfig<'a> {
     ignore_variations: bool,
     tag_filter: Option<&'a Fn(&HashMap<String,String>) -> bool>,
     debug: bool,
+    file_size: u64,
 }
 
 pub struct ChessParserBuilder<'a> {
@@ -23,7 +25,7 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn new() -> Self {
         return ChessParserBuilder{config: ChessParserConfig{ignore_comments: false, ignore_variations: false, 
-            tag_filter: None, debug: false}};
+            tag_filter: None, debug: false, file_size: 0}};
     }
 
     pub fn ignore_comments(&mut self) {
@@ -40,6 +42,10 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn debug(&mut self) {
         self.config.debug = true;
+    }
+
+    pub fn file_size(&mut self, size: u64) {
+        self.config.file_size = size;
     }
 
     pub fn build(&self) -> ChessParserImpl {
@@ -100,7 +106,8 @@ pub struct ChessParserIterator<'a> {
     nags: HashMap<Int,Vec<String>>,
     ch: char,
     skip_game: bool,
-    lines: u64,
+    bytes: usize,
+    progress_bar: ProgressBar,
 }
 
 enum GameResultReason {
@@ -138,7 +145,7 @@ impl <'a> ChessParserIterator<'a> {
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
             tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, result_from_tag: String::new(),
             variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap(), skip_game: false, 
-            lines: 0};
+            bytes: 0, progress_bar: ProgressBar::new(config.file_size)};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -362,8 +369,21 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                 continue;
             }
 
-            if count.unwrap() <= 0 {
+            let bytes = count.unwrap();
+
+            if self.config.file_size > 1_000_000 {
+                self.bytes += bytes;
+                if self.bytes > 100_000 {
+                    self.progress_bar.inc(self.bytes as u64);
+                    self.bytes = 0;
+                }
+            }
+
+            if bytes <= 0 {
                 if self.moves.is_empty() {
+                    if self.config.file_size > 1_000_000 {
+                        self.progress_bar.inc(self.bytes as u64);
+                    }
                     return None;
                 } else {
                     let (_, game) = self.get_game();
