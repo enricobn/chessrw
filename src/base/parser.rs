@@ -12,6 +12,7 @@ pub struct ChessParserConfig<'a> {
     ignore_comments: bool,
     ignore_variations: bool,
     tag_filter: Option<&'a Fn(&HashMap<String,String>) -> bool>,
+    debug: bool,
 }
 
 pub struct ChessParserBuilder<'a> {
@@ -22,7 +23,7 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn new() -> Self {
         return ChessParserBuilder{config: ChessParserConfig{ignore_comments: false, ignore_variations: false, 
-            tag_filter: None}};
+            tag_filter: None, debug: false}};
     }
 
     pub fn ignore_comments(&mut self) {
@@ -35,6 +36,10 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn tag_filter(&mut self, filter: &'a Fn(&HashMap<String,String>) -> bool) {
         self.config.tag_filter = Some(filter);
+    }
+
+    pub fn debug(&mut self) {
+        self.config.debug = true;
     }
 
     pub fn build(&self) -> ChessParserImpl {
@@ -95,6 +100,7 @@ pub struct ChessParserIterator<'a> {
     nags: HashMap<Int,Vec<String>>,
     ch: char,
     skip_game: bool,
+    lines: u64,
 }
 
 enum GameResultReason {
@@ -131,7 +137,8 @@ impl <'a> ChessParserIterator<'a> {
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
             tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, result_from_tag: String::new(),
-            variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap(), skip_game: false};
+            variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap(), skip_game: false, 
+            lines: 0};
     }
 
     fn get_game(&mut self) -> (bool, Option<ChessGame>) {
@@ -292,7 +299,6 @@ impl <'a> ChessParserIterator<'a> {
         self.result_from_tag = String::new();
         self.variation_count= 0;
         self.nags.clear();
-        self.skip_game = false;
     }
 
 }
@@ -317,7 +323,7 @@ impl <T> Sizable<T> for Vec<T> {
 
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Display)]
 enum Status {
         Headings,
         Heading,
@@ -345,6 +351,11 @@ impl <'a> Iterator for ChessParserIterator<'a> {
 
         loop {
             let count = self.file_reader.read_line(&mut self.buf);
+
+            /*self.lines += 1;
+            if self.lines % 100_000 == 0 {
+                println!("{}", self.lines);
+            }*/
             
             if count.is_err() {
                 // TODO
@@ -357,11 +368,39 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                 } else {
                     let (_, game) = self.get_game();
                     if game.is_some() {
-                        return game;
+                        if self.skip_game {
+                            return None;
+                        } else {
+                            if self.config.debug {
+                                println!("Returning game.", )
+                            }
+                            return game;
+                        }
                     }
                 }
             } else {
                 let line = self.buf.to_string();
+
+                if self.config.debug {
+                    print!("{}", line);
+                    println!("{}", self.status);
+                }
+
+                if self.skip_game {
+                    if line.trim_right().is_empty() {
+                        if self.status == Status::Moves {
+                            self.status = Status::Headings;
+                            self.skip_game = false;
+                            if self.config.debug {
+                                println!("Now skip_game is false.", );
+                            }
+                        } else {
+                            self.status = Status::Moves;
+                        }
+                    }
+                    self.buf.clear();
+                    continue;
+                }
 
                 for c in line.chars() {
 
@@ -384,13 +423,17 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             // it's the new line after headings, so now there's moves
                             if self.status == Status::Headings {
                                 self.status = Status::Moves;
+                                
                                 self.skip_game = self.config.tag_filter.map_or_else(|| false, |f| !f(&self.tags));
+                                
+                                if self.skip_game {
+                                    if self.config.debug {
+                                        println!("Empty line after Headings, now skip_game is true.", );
+                                    }
+                                    break;
+                                }
                             } else {
 
-                                if self.skip_game {
-                                    self.clear();
-                                    continue;
-                                }
                                 // it's the new line after end of moves, so I add the new game and prepare to parse another
 
                                 // if cancelled
@@ -400,14 +443,13 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                                 }
 
                                 if game.is_some() {
+                                    if self.config.debug {
+                                        println!("Returning game.", )
+                                    }
                                     return game;
                                 }
                             }
                         }
-                    }
-
-                    if self.skip_game {
-                        continue;
                     }
 
                     if self.status == Status::Comment {
@@ -433,7 +475,10 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                             self.status = Status::Moves;
 
                             if self.skip_game {
-                                continue;
+                                if self.config.debug {
+                                    println!("No heading after Headings, now skip_game is true.", );
+                                }
+                                break;
                             }
                         }
                     }

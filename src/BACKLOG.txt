@@ -10,3 +10,7 @@ TODO
   - ignore variations
   - ignore comments and variations
 - it's possible to read the file char by char without read_line?
+- bin:
+  - add argument --elo ELO which means a minimum elo for both players
+  - add argument --standard which means initial position and known result (!= *)
+  - add argument --tags which means not tags are written

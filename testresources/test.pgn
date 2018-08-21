@@ -12,3 +12,7 @@ Bb4 4. Qc2 O-O 5. a3 Bxc3+ 6. Qxc3 b6 7. Bg5 Bb7 8. Nh3 d6 9. f3 Nbd7 10. e4 e5
 Be2 Ra7 17. Qd2 Qf6 18. a4 Re8 19. O-O-O Nf8 20. Kb1 Ng6 21. Rhf1 Qe7 22. Bd3
 Qf6 23. Rde1 Nf8 24. f4 exf4 25. gxf4 Ng6 (25... Qh4 $5 $11 {is interesting})
 *
+
+[Event "Not Test"]
+
+1. d4 Nf6 2. c4 e6 3. Nc3 *

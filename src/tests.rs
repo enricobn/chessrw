@@ -153,7 +153,6 @@ fn parse_variations_test() {
 fn parse_with_tags_filter_test() {    
     let mut builder = ChessParserBuilder::new();
     builder.tag_filter(&self::filter_tags_by_event);
-
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");

@@ -10,7 +10,16 @@ use std::collections::HashMap;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
- * secs: 1, nanos: 964518173
+ * Downloaded from https://www.ficsgames.org/download.html :
+ * Standard (all ratings)
+ * 2018 / January
+ * No move times
+ * 
+ * Without write file nor other filters:
+ * 81886 games red in Duration {secs: 1, nanos: 877824005}.
+ * 
+ * Without write file and --blackwins:
+ * 37541 games red in Duration { secs: 1, nanos: 286754330 }.
  */
 pub fn main() {
 
