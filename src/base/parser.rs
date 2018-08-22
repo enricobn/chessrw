@@ -121,7 +121,7 @@ enum GameResultReason {
     Undeterminated,
 }
 
-fn result_from_pgn(s: String) -> Result<GameResultReason, ()> {
+fn result_from_pgn(s: &String) -> Result<GameResultReason, ()> {
     match s.as_ref() {
         "abandoned" => Ok(GameResultReason::Abandoned),
         "adjudication" => Ok(GameResultReason::Adjudication),
@@ -211,7 +211,7 @@ impl <'a> ChessParserIterator<'a> {
                 self.tags.insert(self.tag_key.clone(), self.tag_value.clone());
                 if &self.tag_key as &str == "Termination" {
                     // TODO check result of result_from_pgn, avoid clone
-                    self.reason = result_from_pgn(self.tag_value.clone()).unwrap();
+                    self.reason = result_from_pgn(&self.tag_value).unwrap();
                 } else if &self.tag_key as &str == "Result" {
                     self.result_from_tag = self.tag_value.clone();
                 }
@@ -369,8 +369,8 @@ impl <'a> ChessParserIterator<'a> {
                         continue;
                     }
 
-                    self.last_char = self.ch.clone();
-                    self.ch = c.clone();
+                    self.last_char = self.ch;
+                    self.ch = c;
                     if self.status == Status::Ready {
                         if !c.is_whitespace() {
                             self.status = Status::Headings;
