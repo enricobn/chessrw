@@ -44,7 +44,8 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("blackwins").long("blackwins"))
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
-            .arg(Arg::with_name("noprogress").long("noprogress"))
+            .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
+            .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. Preceed the list with * to get only games between players."))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
@@ -115,18 +116,21 @@ struct TagsFilter<'a> {
     black_wins: bool,
     draw: bool,
     min_ply_count: Option<&'a str>,
+    players: Option<&'a str>,
 }
 
 impl <'a> TagsFilter<'a> {
 
     fn new(matches: &'a ArgMatches<'a>) -> TagsFilter {
         TagsFilter{ white_wins: matches.is_present("whitewins"), black_wins: matches.is_present("blackwins"), 
-            draw: matches.is_present("draw"), min_ply_count: matches.value_of("minplycount")}
+            draw: matches.is_present("draw"), min_ply_count: matches.value_of("minplycount"),
+            players : matches.value_of("players")}
     }
 
     fn filter(&self, tags: &HashMap<String,String>) -> bool {
         (!self.apply_result() || self.filter_result(tags)) &&
-        (!self.apply_ply_count() || self.filter_ply_count(tags))
+        (!self.apply_ply_count() || self.filter_ply_count(tags)) &&
+        (!self.apply_players() || self.filter_players(tags))
     }
 
     fn filter_result(&self, tags: &HashMap<String,String>) -> bool {
@@ -148,8 +152,32 @@ impl <'a> TagsFilter<'a> {
         )
     }
 
+    fn filter_players(&self, tags: &HashMap<String,String>) -> bool {
+        tags.get("White").map_or_else(|| false, |wp| 
+            tags.get("Black").map_or_else(|| false, |bp| {
+                let mut result = false;
+                let mut players = self.players.unwrap().to_lowercase();
+                if players.chars().next().unwrap() == '*' {
+                    players = players[1..].to_string();
+                    let mut white = false;
+                    let mut black = false;
+                    for player in players.split(",") {
+                        white |= wp.to_lowercase().contains(player);
+                        black |= bp.to_lowercase().contains(player);
+                    }
+                    result = white && black;
+                } else {
+                    for player in players.split(",") {
+                        result |= wp.to_lowercase().contains(player) || bp.to_lowercase().contains(player);
+                    }
+                }
+                result
+            })
+        )
+    }
+
     fn apply(&self) -> bool {
-        self.apply_result() || self.apply_ply_count()
+        self.apply_result() || self.apply_ply_count() || self.apply_players()
     }
 
     fn apply_result(&self) -> bool {
@@ -160,4 +188,7 @@ impl <'a> TagsFilter<'a> {
         self.min_ply_count.is_some()
     }
 
+    fn apply_players(&self) -> bool {
+        self.players.is_some()
+    }
 }
