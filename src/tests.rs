@@ -90,7 +90,7 @@ fn parse_no_tags_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
 
     assert_eq!(5, games[0].get_moves().len());
 }
@@ -102,7 +102,7 @@ fn parse_tags_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
 
     assert_eq!(5, games[1].get_moves().len());
 
@@ -120,7 +120,7 @@ fn parse_comments_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
 
     assert_eq!(5, games[2].get_moves().len());
 
@@ -140,7 +140,7 @@ fn parse_variations_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
 
     assert_eq!(50, games[3].get_moves().len());
 
@@ -157,7 +157,7 @@ fn parse_with_tags_filter_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGame> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
 
     assert_eq!(1, games.len());
 
