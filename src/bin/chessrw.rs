@@ -239,13 +239,22 @@ fn tags_filter_players(players: &str) -> TagsFilter {
     }
 }
 
+fn white_vs_black(white: &str, black: &str, result: Option<&str>) -> HashMap<String,String> {
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), white.to_string());
+    tags.insert("Black".to_string(), black.to_string());
+
+    if result.is_some() {
+        tags.insert("Result".to_string(), result.unwrap().to_string());
+    }
+    tags
+}
+
 #[test]
 fn filter_players() {
     let tags_filter = tags_filter_players("capablanca");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", None);
 
     assert_eq!(tags_filter.filter_players(&tags), true);
 }
@@ -254,10 +263,7 @@ fn filter_players() {
 fn filter_players_wins() {
     let tags_filter = tags_filter_players("+capablanca");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "1-0".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("1-0"));
 
     assert_eq!(tags_filter.filter_players(&tags), true);
 }
@@ -266,10 +272,7 @@ fn filter_players_wins() {
 fn filter_players_wins_fail() {
     let tags_filter = tags_filter_players("+capablanca");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "0-1".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("0-1"));
 
     assert_eq!(tags_filter.filter_players(&tags), false);
 }
@@ -278,10 +281,7 @@ fn filter_players_wins_fail() {
 fn filter_players_loose() {
     let tags_filter = tags_filter_players("-capablanca");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "0-1".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("0-1"));
 
     assert_eq!(tags_filter.filter_players(&tags), true);
 }
@@ -290,9 +290,7 @@ fn filter_players_loose() {
 fn filter_players_between() {
     let tags_filter = tags_filter_players("*capablanca,corzo");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", None);
 
     assert_eq!(tags_filter.filter_players(&tags), true);
 }
@@ -301,10 +299,7 @@ fn filter_players_between() {
 fn filter_players_between_wins() {
     let tags_filter = tags_filter_players("*+capablanca,corzo");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "1-0".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("1-0"));
 
     assert_eq!(tags_filter.filter_players(&tags), true);
 }
@@ -313,10 +308,7 @@ fn filter_players_between_wins() {
 fn filter_players_between_wins_fail() {
     let tags_filter = tags_filter_players("*+capablanca,corzo");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "0-1".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("0-1"));
 
     assert_eq!(tags_filter.filter_players(&tags), false);
 }
@@ -328,10 +320,7 @@ fn filter_players_between_wins_fail() {
 fn filter_players_between_wins_impossible_fail() {
     let tags_filter = tags_filter_players("*+capablanca,+corzo");
 
-    let mut tags : HashMap<String,String> = HashMap::new();
-    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
-    tags.insert("Result".to_string(), "1-0".to_string());
+    let tags = white_vs_black("Capablanca, Jose Raul", "Corzo y Prinzipe, Juan", Some("1-0"));
 
     assert_eq!(tags_filter.filter_players(&tags), false);
 }
