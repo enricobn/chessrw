@@ -135,7 +135,6 @@ fn result_from_pgn(s: String) -> Result<GameResultReason, ()> {
     }
 }
 
-
 impl <'a> ChessParserIterator<'a> {
 
     pub fn new(config: &'a ChessParserConfig<'a>, file_reader: BufReader<File>) -> Self {
@@ -143,9 +142,10 @@ impl <'a> ChessParserIterator<'a> {
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
-            tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, result_from_tag: String::new(),
-            variation_count: 0, nags: HashMap::new(), ch: char::from_digit(0, 10).unwrap(), skip_game: false, 
-            bytes: 0, progress_bar: ProgressBar::new(config.file_size)};
+            tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, 
+            result_from_tag: String::new(), variation_count: 0, nags: HashMap::new(), 
+            ch: char::from_digit(0, 10).unwrap(), skip_game: false, bytes: 0, 
+            progress_bar: ProgressBar::new(config.file_size)};
     }
 
     pub fn to_game(&self) -> ChessGameImpl {
@@ -545,7 +545,7 @@ impl <'a> ChessParserIterator<'a> {
         self.tag_key.clear();
         self.tag_value.clear();
         self.reason = GameResultReason::Normal;
-        self.result_from_tag = String::new();
+        self.result_from_tag.clear();
         self.variation_count= 0;
         self.nags.clear();
     }

@@ -20,10 +20,10 @@ use separator::Separatable;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,886 games red in 1 second 413 millis.
+ * 81,886 games red in 1 second 342 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,541 games red in 1 second 35 millis.
+ * 37,541 games red in 0 seconds 978 millis.
  */
 pub fn main() -> std::io::Result<()> {
 
