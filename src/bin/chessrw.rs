@@ -159,34 +159,38 @@ impl <'a> TagsFilter<'a> {
             tags.get("Black").map_or_else(|| false, |bp| {
                 let mut result = false;
                 let mut players = self.players.unwrap().to_lowercase();
-                if players.chars().next().unwrap() == '*' {
+                let between = players.chars().next().unwrap() == '*';
+
+                if between {
                     players = players[1..].to_string();
-                    let mut white = false;
-                    let mut black = false;
-                    for player in players.split(",") {
+                }
+
+                let mut white = false;
+                let mut black = false;
+                for mut player in players.split(",") {
+                    let first_char = player.chars().next().unwrap();
+                    if first_char == '+' {
+                        player = &player[1..];
+                        white |= wp.to_lowercase().contains(player) && self.white_wins(tags);
+                        black |= bp.to_lowercase().contains(player) && self.black_wins(tags);
+
+                    } else if first_char == '-' {
+                        player = &player[1..];
+                        white |= wp.to_lowercase().contains(player) && self.black_wins(tags);
+                        black |= bp.to_lowercase().contains(player) && self.white_wins(tags);
+                    } else if first_char == '=' {
+                        player = &player[1..];
+                        white |= wp.to_lowercase().contains(player) && self.draw(tags);
+                        black |= bp.to_lowercase().contains(player) && self.draw(tags);
+                    } else {
                         white |= wp.to_lowercase().contains(player);
                         black |= bp.to_lowercase().contains(player);
                     }
-                    result = white && black;
-                } else {
-                    for mut player in players.split(",") {
-                        let first_char = player.chars().next().unwrap();
-                        if first_char == '+' {
-                            player = &player[1..];
-                            result |= wp.to_lowercase().contains(player) && self.white_wins(tags)
-                                || bp.to_lowercase().contains(player) && self.black_wins(tags);
 
-                        } else if first_char == '-' {
-                            player = &player[1..];
-                            result |= wp.to_lowercase().contains(player) && self.black_wins(tags)
-                                || bp.to_lowercase().contains(player) && self.white_wins(tags);
-                        } else if first_char == '=' {
-                            player = &player[1..];
-                            result |= wp.to_lowercase().contains(player) && self.draw(tags)
-                                || bp.to_lowercase().contains(player) && self.draw(tags);
-                        } else {
-                            result |= wp.to_lowercase().contains(player) || bp.to_lowercase().contains(player);
-                        }
+                    if between {
+                        result |= white && black;
+                    } else {
+                        result |= white || black;
                     }
                 }
                 result
@@ -325,8 +329,47 @@ fn filter_players_between_wins() {
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
-    tags.insert("Black".to_string(), "Forsberg, H.".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
     tags.insert("Result".to_string(), "1-0".to_string());
 
     assert_eq!(tags_filter.filter_players(&tags), true);
+}
+
+#[test]
+fn filter_players_between_wins_fail() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("*+capablanca,corzo"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    tags.insert("Result".to_string(), "0-1".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), false);
+}
+
+#[test]
+/**
+ * Impossible since both cannot win!!!
+ */
+fn filter_players_between_wins_impossible_fail() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("*+capablanca,+corzo"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    tags.insert("Result".to_string(), "1-0".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), false);
 }

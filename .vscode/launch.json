@@ -7,12 +7,29 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug tests in chessparser",
+            "name": "Debug lib tests in chessparser",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
+                    "--",
+                    "--nocapture"
+                ]
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug bin tests in chessparser",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin",
+                    "chessrw",
                     "--",
                     "--nocapture"
                 ]
