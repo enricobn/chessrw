@@ -148,10 +148,17 @@ impl <'a> ChessParserIterator<'a> {
             bytes: 0, progress_bar: ProgressBar::new(config.file_size)};
     }
 
-    fn get_game(&mut self) -> (bool, Option<ChessGameImpl>) {
+    pub fn to_game(&self) -> ChessGameImpl {
+        ChessGameImpl{tags: self.tags.clone(), moves: self.moves.clone(), 
+            comments: self.comments.clone(), variations: self.variations.clone(),
+            after_variations_comments: self.after_variations_comments.clone(),
+            game_result: self.result_from_moves.clone(), nags: self.nags.clone()}
+    }
+
+    fn get_game(&mut self) -> bool {
         // no char has been parsed, it's not a game
         if self.status == Status::Ready {
-            return (false, None);
+            return false;
         }
         // it can happens if there's no result, but it's wrong, since PGN format says it's mandatory. 
         // However it may happen in variations
@@ -168,12 +175,7 @@ impl <'a> ChessParserIterator<'a> {
             self.status = Status::Moves;
         }
 
-        // TODO can I remove clone with a borrow?
-        let result = Some(ChessGameImpl{tags: self.tags.clone(), moves: self.moves.clone(), 
-            comments: self.comments.clone(), variations: self.variations.clone(),
-            after_variations_comments: self.after_variations_comments.clone(),
-            game_result: self.result_from_moves.clone(), nags: self.nags.clone()});
-        return (false, result)
+        true
     }
 
     fn parse_comments(&mut self, c: char) {
@@ -289,69 +291,9 @@ impl <'a> ChessParserIterator<'a> {
         }
     }
 
-    fn clear(&mut self) {
-        self.buf.clear();
-        self.moves.clear(); 
-        self.curr_move.clear();
-        self.status = Status::Headings;
-        self.not_parsed.clear();
-        self.result_from_moves.clear();
-        self.tags.clear();
-        self.variations.clear();
-        self.after_variations_comments.clear();
-        self.comments.clear();
-        self.tag_key.clear();
-        self.tag_value.clear();
-        self.reason = GameResultReason::Normal;
-        self.result_from_tag = String::new();
-        self.variation_count= 0;
-        self.nags.clear();
-    }
-
-}
-
-trait Sizable<T> {
-
-    fn size(&self) -> Int;
-
-    fn last_index(&self) -> Int;
-
-}
-
-impl <T> Sizable<T> for Vec<T> {
-
-    fn size(&self) -> Int {
-        return self.len() as Int;
-    }
-
-    fn last_index(&self) -> Int {
-        return self.size() -1;
-    }
-
-}
-
-#[derive(Eq, PartialEq, Display)]
-enum Status {
-        Headings,
-        Heading,
-        HeadingValue,
-        Moves,
-        Variation,
-        Comment,
-        MoveUnknown, // can be a move number or a game result  
-        MoveNumber, 
-        GameResult,
-        Move,
-        NumericAnnotationGlyph,
-        Ready, // no char has been parsed
-    }
-
-impl <'a> Iterator for ChessParserIterator<'a> {
-    type Item = ChessGameImpl;
-
-    fn next(&mut self) -> Option<ChessGameImpl> {
+    pub fn next_temp(&mut self) -> bool {
         if self.end_parse {
-            return None;
+            return false;
         }
 
         self.clear();
@@ -384,17 +326,16 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                     if self.config.file_size > 1_000_000 {
                         self.progress_bar.inc(self.bytes as u64);
                     }
-                    return None;
+                    return false;
                 } else {
-                    let (_, game) = self.get_game();
-                    if game.is_some() {
+                    if self.get_game() {
                         if self.skip_game {
-                            return None;
+                            return false;
                         } else {
                             if self.config.debug {
                                 println!("Returning game.", )
                             }
-                            return game;
+                            return true;
                         }
                     }
                 }
@@ -456,17 +397,11 @@ impl <'a> Iterator for ChessParserIterator<'a> {
 
                                 // it's the new line after end of moves, so I add the new game and prepare to parse another
 
-                                // if cancelled
-                                let (cancelled, game) = self.get_game();
-                                if cancelled {
-                                    self.end_parse = true;
-                                }
-
-                                if game.is_some() {
+                                if self.get_game() {
                                     if self.config.debug {
                                         println!("Returning game.", )
                                     }
-                                    return game;
+                                    return true;
                                 }
                             }
                         }
@@ -585,8 +520,84 @@ impl <'a> Iterator for ChessParserIterator<'a> {
                 self.buf.clear();
             }
         }
+
     }
 
+    pub fn size(mut self) -> u64 {
+        let mut count: u64 = 0;
+        while self.next_temp() {
+            count += 1;
+        }
+        count
+    }
+
+    fn clear(&mut self) {
+        self.buf.clear();
+        self.moves.clear(); 
+        self.curr_move.clear();
+        self.status = Status::Headings;
+        self.not_parsed.clear();
+        self.result_from_moves.clear();
+        self.tags.clear();
+        self.variations.clear();
+        self.after_variations_comments.clear();
+        self.comments.clear();
+        self.tag_key.clear();
+        self.tag_value.clear();
+        self.reason = GameResultReason::Normal;
+        self.result_from_tag = String::new();
+        self.variation_count= 0;
+        self.nags.clear();
+    }
+
+}
+
+trait Sizable<T> {
+
+    fn size(&self) -> Int;
+
+    fn last_index(&self) -> Int;
+
+}
+
+impl <T> Sizable<T> for Vec<T> {
+
+    fn size(&self) -> Int {
+        return self.len() as Int;
+    }
+
+    fn last_index(&self) -> Int {
+        return self.size() -1;
+    }
+
+}
+
+#[derive(Eq, PartialEq, Display)]
+enum Status {
+        Headings,
+        Heading,
+        HeadingValue,
+        Moves,
+        Variation,
+        Comment,
+        MoveUnknown, // can be a move number or a game result  
+        MoveNumber, 
+        GameResult,
+        Move,
+        NumericAnnotationGlyph,
+        Ready, // no char has been parsed
+    }
+
+impl <'a> Iterator for ChessParserIterator<'a> {
+    type Item = ChessGameImpl;
+
+    fn next(&mut self) -> Option<ChessGameImpl> {
+        if self.next_temp() {
+            Some(self.to_game())
+        } else {
+            None
+        }
+    }
 }
 
 pub struct ChessGameImpl {

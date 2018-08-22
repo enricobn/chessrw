@@ -1,11 +1,11 @@
-#[cfg(test)]
-
-use base::parser::*;
-use base::writer::*;
-use base::fen::*;
+use base::parser::{ChessGame, ChessGameImpl, ChessParser, ChessParserBuilder, ChessParserIterator};
+use base::writer::ChessWriterBuilder;
+use base::fen::{ChessColor, FENParserBuilder};
 use std::fs::File;
 use std::fs;
 use std::collections::HashMap;
+
+#[cfg(test)]
 
 #[test]
 fn parse_kramnik() {
@@ -16,18 +16,6 @@ fn parse_kramnik() {
 
     let file = File::open("testresources/kramnik.pgn");
 
-/*
-    let unknown = "Unknown".to_string();
-
-    let mut count = 0;
-    for game in p.parse(file.unwrap()) {
-        let white = game.get_tags().get("White").unwrap_or(&unknown);
-        let black = game.get_tags().get("Black").unwrap_or(&unknown);
-        println!("{} vs {} -> {}", white, black, game.get_game_result());
-        count += 1;
-    }
-    println!("{} games", count);
-    */
     assert_eq!(p.parse(file.unwrap()).count(), 40);
 }
 
@@ -90,7 +78,7 @@ fn parse_no_tags_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
 
     assert_eq!(5, games[0].get_moves().len());
 }
@@ -102,7 +90,7 @@ fn parse_tags_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
 
     assert_eq!(5, games[1].get_moves().len());
 
@@ -120,7 +108,7 @@ fn parse_comments_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
 
     assert_eq!(5, games[2].get_moves().len());
 
@@ -140,7 +128,7 @@ fn parse_variations_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
 
     assert_eq!(50, games[3].get_moves().len());
 
@@ -157,11 +145,20 @@ fn parse_with_tags_filter_test() {
 
     let file = File::open("testresources/test.pgn");
 
-    let games : Vec<ChessGameImpl> = p.parse(file.unwrap()).collect();
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
 
     assert_eq!(1, games.len());
 
     assert_eq!(5, games[0].get_moves().len());
+}
+
+fn  collect<'a>(mut it: ChessParserIterator<'a>) -> Vec<ChessGameImpl> {
+    let mut result = Vec::new();
+
+    while it.next_temp() {
+        result.push(it.to_game());
+    }
+    result
 }
 
 fn filter_tags_by_event(tags: &HashMap<String,String>) -> bool {

@@ -1,13 +1,16 @@
 extern crate chessrw;
 extern crate clap;
+extern crate separator;
 
 use std::fs::File;
 use chessrw::base::parser::*;
 use chessrw::base::writer::*;
 use std::time::Instant;
+use std::time::Duration;
 use clap::{Arg, App, ArgMatches};
 use std::collections::HashMap;
 use std::fs;
+use separator::Separatable;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
@@ -17,10 +20,10 @@ use std::fs;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81886 games red in Duration {secs: 1, nanos: 877824005}.
+ * 81886 games red in 1 second 413 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37541 games red in Duration { secs: 1, nanos: 286754330 }.
+ * 37541 games red in 1 second 35 millis.
  */
 pub fn main() -> std::io::Result<()> {
 
@@ -66,7 +69,7 @@ pub fn main() -> std::io::Result<()> {
 
     let metadata = fs::metadata(&input)?;
     let file = File::open(&input);
-    println!("File size: {} bytes.", metadata.len());
+    println!("File size: {} bytes.", metadata.len().separated_string());
 
     if !matches.is_present("noprogress") {
         builder.file_size(metadata.len());
@@ -75,6 +78,7 @@ pub fn main() -> std::io::Result<()> {
     let p = builder.build();
 
     let start = Instant::now();
+
     if matches.is_present("OUTPUT") {
         let file_to_write = File::create(matches.value_of("OUTPUT").unwrap());
         let chess_writer_builder = ChessWriterBuilder{};
@@ -82,15 +86,28 @@ pub fn main() -> std::io::Result<()> {
         let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
         
         let mut count = 0;
-        for game in p.parse(file.unwrap()) {
-            chess_writer.write(&game).unwrap();
+
+        let mut parsed = p.parse(file.unwrap());
+
+        while parsed.next_temp() {
+            chess_writer.write(&parsed).unwrap();
             count += 1;
         }
         println!("{} games written in {:?}.", count, start.elapsed());
     } else {
-        println!("{} games red in {:?}.", p.parse(file.unwrap()).count(), start.elapsed());
+        let count = p.parse(file.unwrap()).size();
+        println!("{} games red in {}.", count, format_duration(start.elapsed()));
     }
+
     Result::Ok(())
+}
+
+fn format_duration(duration: Duration) -> String {
+    if duration.as_secs() == 1 {
+        format!("1 second {} millis", duration.subsec_millis().separated_string())
+    } else {
+        format!("{} seconds {} millis", duration.as_secs().separated_string(), duration.subsec_millis().separated_string())
+    }
 }
 
 struct TagsFilter<'a> {
