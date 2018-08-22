@@ -229,15 +229,19 @@ impl <'a> TagsFilter<'a> {
 
 #[cfg(test)]
 
-#[test]
-fn filter_players() {
-    let tags_filter = TagsFilter{
+fn tags_filter_players(players: &str) -> TagsFilter {
+    TagsFilter{
         white_wins: false,
         black_wins: false,
         draw: false,
         min_ply_count: None,
-        players: Some("capablanca"),
-    };
+        players: Some(players),
+    }
+}
+
+#[test]
+fn filter_players() {
+    let tags_filter = tags_filter_players("capablanca");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -248,13 +252,7 @@ fn filter_players() {
 
 #[test]
 fn filter_players_wins() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("+capablanca"),
-    };
+    let tags_filter = tags_filter_players("+capablanca");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -266,13 +264,7 @@ fn filter_players_wins() {
 
 #[test]
 fn filter_players_wins_fail() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("+capablanca"),
-    };
+    let tags_filter = tags_filter_players("+capablanca");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -284,13 +276,7 @@ fn filter_players_wins_fail() {
 
 #[test]
 fn filter_players_loose() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("-capablanca"),
-    };
+    let tags_filter = tags_filter_players("-capablanca");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -302,13 +288,7 @@ fn filter_players_loose() {
 
 #[test]
 fn filter_players_between() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("*capablanca,corzo"),
-    };
+    let tags_filter = tags_filter_players("*capablanca,corzo");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -319,13 +299,7 @@ fn filter_players_between() {
 
 #[test]
 fn filter_players_between_wins() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("*+capablanca,corzo"),
-    };
+    let tags_filter = tags_filter_players("*+capablanca,corzo");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -337,13 +311,7 @@ fn filter_players_between_wins() {
 
 #[test]
 fn filter_players_between_wins_fail() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("*+capablanca,corzo"),
-    };
+    let tags_filter = tags_filter_players("*+capablanca,corzo");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
@@ -358,13 +326,7 @@ fn filter_players_between_wins_fail() {
  * Impossible since both cannot win!!!
  */
 fn filter_players_between_wins_impossible_fail() {
-    let tags_filter = TagsFilter{
-        white_wins: false,
-        black_wins: false,
-        draw: false,
-        min_ply_count: None,
-        players: Some("*+capablanca,+corzo"),
-    };
+    let tags_filter = tags_filter_players("*+capablanca,+corzo");
 
     let mut tags : HashMap<String,String> = HashMap::new();
     tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
