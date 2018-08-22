@@ -20,10 +20,10 @@ use separator::Separatable;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81886 games red in 1 second 413 millis.
+ * 81,886 games red in 1 second 413 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37541 games red in 1 second 35 millis.
+ * 37,541 games red in 1 second 35 millis.
  */
 pub fn main() -> std::io::Result<()> {
 
@@ -93,10 +93,10 @@ pub fn main() -> std::io::Result<()> {
             chess_writer.write(&parsed).unwrap();
             count += 1;
         }
-        println!("{} games written in {:?}.", count, start.elapsed());
+        println!("{} games written in {:?}.", count.separated_string(), start.elapsed());
     } else {
         let count = p.parse(file.unwrap()).size();
-        println!("{} games red in {}.", count, format_duration(start.elapsed()));
+        println!("{} games red in {}.", count.separated_string(), format_duration(start.elapsed()));
     }
 
     Result::Ok(())
