@@ -45,7 +45,9 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
             .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
-            .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. Preceed the list with * to get only games between players."))
+            .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players.\
+                Put an * as first character to get only games between players.\
+                Put a +,- or = as first character of a player to get only wins, loses or draws for that character."))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
@@ -167,13 +169,41 @@ impl <'a> TagsFilter<'a> {
                     }
                     result = white && black;
                 } else {
-                    for player in players.split(",") {
-                        result |= wp.to_lowercase().contains(player) || bp.to_lowercase().contains(player);
+                    for mut player in players.split(",") {
+                        let first_char = player.chars().next().unwrap();
+                        if first_char == '+' {
+                            player = &player[1..];
+                            result |= wp.to_lowercase().contains(player) && self.white_wins(tags)
+                                || bp.to_lowercase().contains(player) && self.black_wins(tags);
+
+                        } else if first_char == '-' {
+                            player = &player[1..];
+                            result |= wp.to_lowercase().contains(player) && self.black_wins(tags)
+                                || bp.to_lowercase().contains(player) && self.white_wins(tags);
+                        } else if first_char == '=' {
+                            player = &player[1..];
+                            result |= wp.to_lowercase().contains(player) && self.draw(tags)
+                                || bp.to_lowercase().contains(player) && self.draw(tags);
+                        } else {
+                            result |= wp.to_lowercase().contains(player) || bp.to_lowercase().contains(player);
+                        }
                     }
                 }
                 result
             })
         )
+    }
+
+    fn white_wins(&self, tags: &HashMap<String,String>) -> bool {
+        tags.get("Result").map_or_else(|| false, |r| r == "1-0")
+    }
+
+    fn black_wins(&self, tags: &HashMap<String,String>) -> bool {
+        tags.get("Result").map_or_else(|| false, |r| r == "0-1")
+    }
+
+    fn draw(&self, tags: &HashMap<String,String>) -> bool {
+        tags.get("Result").map_or_else(|| false, |r| r == "1/2-1/2")
     }
 
     fn apply(&self) -> bool {
@@ -191,4 +221,112 @@ impl <'a> TagsFilter<'a> {
     fn apply_players(&self) -> bool {
         self.players.is_some()
     }
+}
+
+#[cfg(test)]
+
+#[test]
+fn filter_players() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("capablanca"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), true);
+}
+
+#[test]
+fn filter_players_wins() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("+capablanca"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    tags.insert("Result".to_string(), "1-0".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), true);
+}
+
+#[test]
+fn filter_players_wins_fail() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("+capablanca"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    tags.insert("Result".to_string(), "0-1".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), false);
+}
+
+#[test]
+fn filter_players_loose() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("-capablanca"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+    tags.insert("Result".to_string(), "0-1".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), true);
+}
+
+#[test]
+fn filter_players_between() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("*capablanca,corzo"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Corzo y Prinzipe, Juan".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), true);
+}
+
+#[test]
+fn filter_players_between_wins() {
+    let tags_filter = TagsFilter{
+        white_wins: false,
+        black_wins: false,
+        draw: false,
+        min_ply_count: None,
+        players: Some("*+capablanca,corzo"),
+    };
+
+    let mut tags : HashMap<String,String> = HashMap::new();
+    tags.insert("White".to_string(), "Capablanca, Jose Raul".to_string());
+    tags.insert("Black".to_string(), "Forsberg, H.".to_string());
+    tags.insert("Result".to_string(), "1-0".to_string());
+
+    assert_eq!(tags_filter.filter_players(&tags), true);
 }
