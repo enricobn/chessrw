@@ -5,7 +5,7 @@ TODO
 - optimize (can I remove clone on creation of ChessGame?)
 - add more tests:
   - filtering games with tag filter
-    - even tags that does not exist
+    - even tags that do not exist
   - ignore comments
   - ignore variations
   - ignore comments and variations

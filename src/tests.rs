@@ -8,6 +8,18 @@ use std::collections::HashMap;
 #[cfg(test)]
 
 #[test]
+fn capablanca_is_my_favorite() {
+    let mut builder = ChessParserBuilder::new();
+    builder.ignore_comments();
+    builder.ignore_variations();
+    let p = builder.build();
+
+    let file = File::open("testresources/Capablanca.pgn");
+
+    assert_eq!(p.parse(file.unwrap()).count(), 597);
+}
+
+#[test]
 fn parse_kramnik() {
     let mut builder = ChessParserBuilder::new();
     builder.ignore_comments();
