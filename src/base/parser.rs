@@ -7,6 +7,7 @@ use std::collections::hash_map::Entry;
 use base::tag::*;
 use base::fen::*;
 use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
 
 #[derive(Clone)]
 pub struct ChessParserConfig<'a> {
@@ -138,6 +139,10 @@ fn result_from_pgn(s: &String) -> Result<GameResultReason, ()> {
 impl <'a> ChessParserIterator<'a> {
 
     pub fn new(config: &'a ChessParserConfig<'a>, file_reader: BufReader<File>) -> Self {
+        let pb = ProgressBar::new(config.file_size);
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("#>-"));
         return ChessParserIterator{config: config, file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
@@ -145,7 +150,7 @@ impl <'a> ChessParserIterator<'a> {
             tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, 
             result_from_tag: String::new(), variation_count: 0, nags: HashMap::new(), 
             ch: char::from_digit(0, 10).unwrap(), skip_game: false, bytes: 0, 
-            progress_bar: ProgressBar::new(config.file_size)};
+            progress_bar: pb};
     }
 
     pub fn to_game(&self) -> ChessGameImpl {
