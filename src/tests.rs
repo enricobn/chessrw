@@ -43,7 +43,7 @@ fn write_kramnik() {
     fs::create_dir_all("target/tmp").unwrap();
 
     let file_to_write = File::create("target/tmp/kramnik_write.pgn");
-    let chess_writer_builder = ChessWriterBuilder{};
+    let chess_writer_builder = ChessWriterBuilder::new();
 
     let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
     
@@ -64,7 +64,7 @@ fn write_kramnik_ignore() {
     fs::create_dir_all("target/tmp").unwrap();
 
     let file_to_write = File::create("target/tmp/kramnik_write_ignore.pgn");
-    let chess_writer_builder = ChessWriterBuilder{};
+    let chess_writer_builder = ChessWriterBuilder::new();
 
     let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
     

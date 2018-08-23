@@ -6,33 +6,54 @@ use std::io::ErrorKind;
 use base::parser::ChessGame;
 use base::fen::*;
 
+#[derive(Clone)]
+pub struct ChessWriterConfig {
+    notags: bool,
+}
+
 pub struct ChessWriterBuilder{
+    config: ChessWriterConfig,
 }
 
 impl ChessWriterBuilder {
+
+    pub fn new() -> ChessWriterBuilder {
+        ChessWriterBuilder{config: ChessWriterConfig{notags: false}}
+    }
     
     pub fn build(&self, file: File) -> ChessWriter {
-        ChessWriter::new(file)
+        ChessWriter::new(self.config.clone(), file)
+    }
+
+    pub fn notags(&mut self) {
+        self.config.notags = true;
     }
 
 }
 
 pub struct ChessWriter{
+    config: ChessWriterConfig,
     w: BufWriter<File>,
 }
 
 impl ChessWriter {
 
-    pub fn new(file: File) -> ChessWriter {
-        ChessWriter{w: BufWriter::new(file)}
+    pub fn new(config: ChessWriterConfig, file: File) -> ChessWriter {
+        ChessWriter{config: config, w: BufWriter::new(file)}
     }
 
     pub fn write(&mut self, game: &ChessGame) -> Result<(), Error> {
-        for (tag_key,tag_value) in game.get_tags() {
-            write!(&mut self.w, "[{} \"{}\"]\n", tag_key, tag_value)?;
-        }
+        if !self.config.notags {
+            let tags = game.get_tags();
 
-        write!(&mut self.w, "\n")?;
+            if !tags.is_empty() {
+                for (tag_key,tag_value) in tags {
+                    write!(&mut self.w, "[{} \"{}\"]\n", tag_key, tag_value)?;
+                }
+
+                write!(&mut self.w, "\n")?;
+            }
+        }
 
         match game.get_before_moves_comment() {
             Some(comment) => write!(&mut self.w, "{}\n", comment)?,

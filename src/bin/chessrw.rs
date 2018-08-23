@@ -40,14 +40,15 @@ pub fn main() -> std::io::Result<()> {
                 .index(2))
             .arg(Arg::with_name("nocomments").long("nocomments"))
             .arg(Arg::with_name("novariations").long("novariations"))
+            .arg(Arg::with_name("notags").long("notags"))
             .arg(Arg::with_name("whitewins").long("whitewins"))
             .arg(Arg::with_name("blackwins").long("blackwins"))
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
             .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
-            .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players.\
-                Put an * as first character to get only games between players.\
-                Put a +,- or = as first character of a player to get only wins, loses or draws for that character."))
+            .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. \
+                Put an * as first character to get only games between players. \
+                Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
@@ -84,7 +85,11 @@ pub fn main() -> std::io::Result<()> {
 
     if matches.is_present("OUTPUT") {
         let file_to_write = File::create(matches.value_of("OUTPUT").unwrap());
-        let chess_writer_builder = ChessWriterBuilder{};
+        let mut chess_writer_builder = ChessWriterBuilder::new();
+
+        if matches.is_present("notags") {
+            chess_writer_builder.notags();
+        }
 
         let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
         

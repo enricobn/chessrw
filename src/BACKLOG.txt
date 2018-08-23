@@ -13,6 +13,5 @@ TODO
 - bin:
   - add argument --elo ELO which means a minimum elo for both players
   - add argument --standard which means initial position and known result (!= *)
-  - add argument --notags which means that no tags are written (but if there's a filter must be read)
-  - add argument --nonags which means that no nags are red
   - add argument --onlymoves which means --nocomments --novariations --notags --nonags
+  - when --notags is specified, tags must be read only if to tags filter is specified
