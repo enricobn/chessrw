@@ -4,6 +4,7 @@ use base::fen::{ChessColor, FENParserBuilder};
 use std::fs::File;
 use std::fs;
 use std::collections::HashMap;
+use std::io::Read;
 
 #[cfg(test)]
 
@@ -164,7 +165,18 @@ fn parse_with_tags_filter_test() {
     assert_eq!(5, games[0].get_moves().len());
 }
 
-fn  collect<'a>(mut it: ChessParserIterator<'a>) -> Vec<ChessGameImpl> {
+#[test]
+fn parse_string() {
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+    //let games = collect(p.parse_string(&"1. d4 Nf6 2. c4 e6 3. Nc3 *".to_string()));
+
+    let games : Vec<ChessGameImpl> = p.parse_string(&"1. d4 Nf6 2. c4 e6 3. Nc3 *".to_string()).collect();
+
+    assert_eq!(5, games[0].get_moves().len());
+}
+
+fn  collect<'a,R: Read>(mut it: ChessParserIterator<'a,R>) -> Vec<ChessGameImpl> {
     let mut result = Vec::new();
 
     while it.next_temp() {

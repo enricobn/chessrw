@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
+use std::io::Read;
 use std::char;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -57,7 +58,9 @@ impl <'a> ChessParserBuilder<'a> {
 
 pub trait ChessParser<'a> {
 
-    fn parse(&self, file: File) -> ChessParserIterator;
+    fn parse(&self, file: File) -> ChessParserIterator<File>;
+
+    fn parse_string(&self, s: &'a String) -> ChessParserIterator<&'a [u8]>;
 
 }
 
@@ -67,11 +70,15 @@ pub struct ChessParserImpl<'a> {
 
 impl <'a> ChessParser<'a> for ChessParserImpl<'a> {
 
-    fn parse(&self, file: File) -> ChessParserIterator {
+    fn parse(&self, file: File) -> ChessParserIterator<File> {
         let reader = BufReader::new(file);
         return ChessParserIterator::new(&self.config, reader);
     }
 
+    fn parse_string(&self, s: &'a String) -> ChessParserIterator<&'a [u8]> {
+        let reader = BufReader::new(s.as_bytes());
+        return ChessParserIterator::new(&self.config, reader);
+    }
 }
 
 impl <'a> ChessParserImpl<'a> {
@@ -84,9 +91,9 @@ impl <'a> ChessParserImpl<'a> {
 
 type Int = i16;
 
-pub struct ChessParserIterator<'a> {
+pub struct ChessParserIterator<'a,R: Read> {
     config: &'a ChessParserConfig<'a>,
-    file_reader: BufReader<File>,
+    file_reader: BufReader<R>,
     buf: String,
     moves: Vec<String>,
     curr_move: String,
@@ -136,9 +143,9 @@ fn result_from_pgn(s: &String) -> Result<GameResultReason, ()> {
     }
 }
 
-impl <'a> ChessParserIterator<'a> {
+impl <'a, R: Read> ChessParserIterator<'a,R> {
 
-    pub fn new(config: &'a ChessParserConfig<'a>, file_reader: BufReader<File>) -> Self {
+    pub fn new(config: &'a ChessParserConfig<'a>, file_reader: BufReader<R>) -> Self {
         let pb = ProgressBar::new(config.file_size);
         pb.set_style(ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
@@ -593,7 +600,7 @@ enum Status {
         Ready, // no char has been parsed
     }
 
-impl <'a> Iterator for ChessParserIterator<'a> {
+impl <'a,R: Read> Iterator for ChessParserIterator<'a,R> {
     type Item = ChessGameImpl;
 
     fn next(&mut self) -> Option<ChessGameImpl> {
@@ -722,7 +729,7 @@ impl ChessGame for ChessGameImpl {
     }
 }
 
-impl <'a> ChessGame for ChessParserIterator<'a> {
+impl <'a,R: Read> ChessGame for ChessParserIterator<'a,R> {
 
     fn get_tags(&self) -> &HashMap<String,String> {
         &self.tags
