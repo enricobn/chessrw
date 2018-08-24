@@ -46,6 +46,7 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
             .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
+            .arg(Arg::with_name("onlymoves").long("onlymoves").help("Write only moves."))
             .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. \
                 Put an * as first character to get only games between players. \
                 Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
@@ -59,11 +60,12 @@ pub fn main() -> std::io::Result<()> {
     let fun = |tags: &HashMap<String,String>| tags_filter.filter(tags);
 
     let mut builder = ChessParserBuilder::new();
-    if matches.is_present("nocomments") {
+    let only_moves = matches.is_present("onlymoves");
+    if matches.is_present("nocomments")  || only_moves {
         builder.ignore_comments();
     }
 
-    if matches.is_present("novariations") {
+    if matches.is_present("novariations") || only_moves {
         builder.ignore_variations();
     }
 
@@ -87,7 +89,7 @@ pub fn main() -> std::io::Result<()> {
         let file_to_write = File::create(matches.value_of("OUTPUT").unwrap());
         let mut chess_writer_builder = ChessWriterBuilder::new();
 
-        if matches.is_present("notags") {
+        if matches.is_present("notags") || only_moves {
             chess_writer_builder.notags();
         }
 
