@@ -6,7 +6,7 @@ A rust library for reading and writing PGN files and an utility to read a PGN fi
 Usage of the utility
 ---------------------
 ```
-chessrw [FLAGS] [OPTIONS] <INPUT> [OUTPUT]
+    chessrw [FLAGS] [OPTIONS] <INPUT> [OUTPUT]
 
 FLAGS:
         --blackwins
@@ -16,6 +16,7 @@ FLAGS:
         --noprogress      No progress bar is showed (faster).
         --notags
         --novariations
+        --onlymoves       Write only moves (alias for --nocomments --novariations --notags).
     -V, --version         Prints version information
         --whitewins
 

@@ -46,7 +46,7 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("draw").long("draw"))
             .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
-            .arg(Arg::with_name("onlymoves").long("onlymoves").help("Write only moves."))
+            .arg(Arg::with_name("onlymoves").long("onlymoves").help("Write only moves (alias for --nocomments --novariations --notags)."))
             .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. \
                 Put an * as first character to get only games between players. \
                 Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
