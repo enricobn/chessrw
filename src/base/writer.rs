@@ -63,7 +63,7 @@ impl ChessWriter {
         // TODO error
         self.export_moves(game)?;
 
-        write!(&mut self.w, " {}\n\n", game.get_game_result())?;
+        write!(&mut self.w, "{}\n\n", game.get_game_result())?;
 
         self.w.flush()
     }
