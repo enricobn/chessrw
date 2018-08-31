@@ -144,7 +144,11 @@ impl FENParser {
         }
 
         Result::Ok(ChessPosition{active_color: active_color, half_move_clock: half_move_clock,
-            full_move_number: full_move_number})
+            full_move_number: full_move_number, 
+            white_king_side_castling: white_king_side_castling, 
+            black_king_side_castling: black_king_side_castling,
+            white_queen_side_castling: white_queen_side_castling,
+            black_queen_side_castling: black_queen_side_castling})
     }
 
 }
@@ -153,10 +157,15 @@ pub struct ChessPosition {
     pub active_color: ChessColor,
     pub half_move_clock: u16,
     pub full_move_number: u16,
+    pub white_king_side_castling: bool,
+    pub black_king_side_castling: bool,
+    pub white_queen_side_castling: bool,
+    pub black_queen_side_castling: bool,
 }
 
 const INITIAL_POSITION: ChessPosition = 
-    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1};
+    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1, 
+    white_king_side_castling: true, black_king_side_castling: true, white_queen_side_castling: true, black_queen_side_castling: true};
 
 impl ChessPosition {
     pub fn initial_position() -> ChessPosition {
