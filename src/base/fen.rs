@@ -21,7 +21,7 @@ impl FENParser {
 
     pub fn parse(&self, fen: &str) -> Result<ChessPosition,String> {
         let mut rank = 8;
-        let mut file = 'a';
+        let mut file : u8 = 1; //'a'
         let mut offset = 0;
         //Chessboard chessboard = new Chessboard();
         let mut status = 0;
@@ -36,6 +36,7 @@ impl FENParser {
         let mut half_move_clock = 0;
         let mut full_move_number_string = String::new();
         let mut full_move_number = 1;
+        let mut chessboard = ChessBoard::new();
 
         for c in fen.chars() {
             offset += 1;
@@ -52,12 +53,10 @@ impl FENParser {
                 //new rank
                 if c == '/' {
                     rank -= 1;
-                    file = 'a';
+                    file = 1;
                 //empty cells
                 } else if c >= '1' && c <= '8' {
-                    let mut file_i = file as u8;
-                    file_i += c.to_string().parse::<u8>().unwrap();
-                    file = file_i as char;
+                    file += c.to_string().parse::<u8>().unwrap();
                 //finally a piece
                 } else {
                     /*
@@ -71,9 +70,8 @@ impl FENParser {
                             " (" + new String(cbuf) + ")", e);
                     }
                     */
-                    let mut file_i = file as u8;
-                    file_i += 1;
-                    file = file_i as char;
+                    chessboard.set_piece(file, rank, char_to_piece(c));
+                    file += 1;
                 }
 
             } else if status == 1 {
@@ -148,10 +146,93 @@ impl FENParser {
             white_king_side_castling: white_king_side_castling, 
             black_king_side_castling: black_king_side_castling,
             white_queen_side_castling: white_queen_side_castling,
-            black_queen_side_castling: black_queen_side_castling})
+            black_queen_side_castling: black_queen_side_castling,
+            board: chessboard})
     }
 
 }
+
+#[derive(Display,Debug,PartialEq,Clone,Copy)]
+pub enum Piece {
+    None,
+    WhitePawn,
+    BlackPawn,
+    WhiteKnight,
+    BlackKnight,
+    WhiteBishop,
+    BlackBishop,
+    WhiteRook,
+    BlackRook,
+    WhiteQueen,
+    BlackQueen,
+    WhiteKing,
+    BlackKing,
+}
+
+pub fn char_to_piece(c: char) -> Piece {
+    match c {
+        'P' => Piece::WhitePawn,
+        'p' => Piece::BlackPawn,
+        'B' => Piece::WhiteBishop,
+        'b' => Piece::BlackBishop,
+        'N' => Piece::WhiteKnight,
+        'n' => Piece::BlackKnight,
+        'R' => Piece::WhiteRook,
+        'r' => Piece::BlackRook,
+        'Q' => Piece::WhiteQueen,
+        'q' => Piece::BlackQueen,
+        'K' => Piece::WhiteKing,
+        'k' => Piece::BlackQueen,
+        _ => Piece::None
+    }
+}
+
+pub struct ChessBoard {
+    /**
+     * first index is the 8 - rank, the second is file - 1
+     */  
+    pieces: [[Piece; 8]; 8]
+}
+
+impl ChessBoard {
+
+    pub fn new() -> ChessBoard {
+        ChessBoard{pieces: [[Piece::None; 8]; 8]}
+    }
+
+    pub fn initial() -> ChessBoard {
+        INITIAL_BOARD
+    }
+
+    pub fn set_piece(&mut self, file: u8, rank: u8, piece: Piece) {
+        let r = (8 - rank) as usize;
+        let f = (file - 1) as usize;
+        self.pieces[r][f] = piece;
+    }
+
+    pub fn get_piece(&self, file: u8, rank: u8) -> Piece {
+        let r = (8 - rank) as usize;
+        let f = (file - 1) as usize;
+        self.pieces[r][f]
+    }
+}
+
+const INITIAL_BOARD : ChessBoard =
+    ChessBoard{pieces: [
+            [Piece::BlackRook, Piece::BlackKnight, Piece::BlackBishop, Piece::BlackQueen, Piece::BlackKing, Piece::BlackBishop, Piece::BlackKnight, Piece::BlackRook],
+            [Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn, Piece::BlackPawn],
+            [Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None],
+            [Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None],
+            [Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None],
+            [Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None, Piece::None],
+            [Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn, Piece::WhitePawn],
+            [Piece::WhiteRook, Piece::WhiteKnight, Piece::WhiteBishop, Piece::WhiteQueen, Piece::WhiteKing, Piece::WhiteBishop, Piece::WhiteKnight, Piece::WhiteRook],
+        ]};
+
+const INITIAL_POSITION: ChessPosition = 
+    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1, 
+    white_king_side_castling: true, black_king_side_castling: true, white_queen_side_castling: true, black_queen_side_castling: true,
+    board: INITIAL_BOARD};
 
 pub struct ChessPosition {
     pub active_color: ChessColor,
@@ -161,14 +242,12 @@ pub struct ChessPosition {
     pub black_king_side_castling: bool,
     pub white_queen_side_castling: bool,
     pub black_queen_side_castling: bool,
+    pub board: ChessBoard,
 }
-
-const INITIAL_POSITION: ChessPosition = 
-    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1, 
-    white_king_side_castling: true, black_king_side_castling: true, white_queen_side_castling: true, black_queen_side_castling: true};
 
 impl ChessPosition {
     pub fn initial_position() -> ChessPosition {
+        println!("initial ChessPosition", );
         INITIAL_POSITION
     }
 }
