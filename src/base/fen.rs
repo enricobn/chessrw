@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 pub struct FENParserBuilder {
 }
 
@@ -182,10 +184,29 @@ pub fn char_to_piece(c: char) -> Piece {
         'Q' => Piece::WhiteQueen,
         'q' => Piece::BlackQueen,
         'K' => Piece::WhiteKing,
-        'k' => Piece::BlackQueen,
+        'k' => Piece::BlackKing,
         _ => Piece::None
     }
 }
+
+pub fn piece_to_char(piece: Piece) -> char {
+    match piece {
+        Piece::WhitePawn => 'P',
+        Piece::BlackPawn => 'p',
+        Piece::WhiteBishop => 'B',
+        Piece::BlackBishop => 'b',
+        Piece::WhiteKnight => 'N',
+        Piece::BlackKnight => 'n',
+        Piece::WhiteRook => 'R',
+        Piece::BlackRook => 'r',
+        Piece::WhiteQueen => 'Q',
+        Piece::BlackQueen => 'q',
+        Piece::WhiteKing => 'K',
+        Piece::BlackKing => 'k',
+        Piece::None => ' ',
+    }
+}
+
 
 pub struct ChessBoard {
     /**
@@ -214,6 +235,21 @@ impl ChessBoard {
         let r = (8 - rank) as usize;
         let f = (file - 1) as usize;
         self.pieces[r][f]
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+
+        for (_, row) in self.pieces.iter().enumerate() {
+            s = s.add("-----------------\n|");
+            for (_, piece) in row.iter().enumerate() {
+                s.push(piece_to_char(*piece));
+                s.push('|');
+            }
+            s.push('\n');
+        }
+        s = s.add("-----------------\n");
+        s
     }
 }
 
@@ -247,7 +283,6 @@ pub struct ChessPosition {
 
 impl ChessPosition {
     pub fn initial_position() -> ChessPosition {
-        println!("initial ChessPosition", );
         INITIAL_POSITION
     }
 }
