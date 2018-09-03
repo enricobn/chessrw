@@ -112,18 +112,11 @@ impl FENParser {
             }
         }
 
-        /*if(enPassantTargetSquareString.len() > 0 && 
-                enPassantTargetSquare == null) {
-            try{
-                enPassantTargetSquare = Square.newSquare(
-                    enPassantTargetSquareString);
-            }catch(Exception e) {
-                throw new IllegalFormatException(
-                    "Unknown en passant target square (" + 
-                    enPassantTargetSquareString + ")");                                
-            }
-        }
-        */
+        let en_passant_target_square = if en_passant_target_square_string.len() > 0 {
+            Some(Square::from_string(&en_passant_target_square_string))
+        } else {
+            None
+        };
         
         if half_move_clock_string.len() > 0 {
             match half_move_clock_string.parse::<u16>() {
@@ -149,7 +142,7 @@ impl FENParser {
             black_king_side_castling: black_king_side_castling,
             white_queen_side_castling: white_queen_side_castling,
             black_queen_side_castling: black_queen_side_castling,
-            board: chessboard})
+            board: chessboard, en_passant_target_square: en_passant_target_square})
     }
 
 }

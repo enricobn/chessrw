@@ -53,6 +53,24 @@ pub fn piece_to_char(piece: Piece) -> char {
     }
 }
 
+pub fn piece_color(piece: &Piece) -> ChessColor {
+    match piece {
+        Piece::WhitePawn => ChessColor::White,
+        Piece::BlackPawn => ChessColor::Black,
+        Piece::WhiteBishop => ChessColor::White,
+        Piece::BlackBishop => ChessColor::Black,
+        Piece::WhiteKnight => ChessColor::White,
+        Piece::BlackKnight => ChessColor::Black,
+        Piece::WhiteRook => ChessColor::White,
+        Piece::BlackRook => ChessColor::Black,
+        Piece::WhiteQueen => ChessColor::White,
+        Piece::BlackQueen => ChessColor::Black,
+        Piece::WhiteKing => ChessColor::White,
+        Piece::BlackKing => ChessColor::Black,
+        Piece::None => ChessColor::White, // TODO
+    }
+}
+
 #[derive(Display,Debug,PartialEq,Clone,Copy)]
 pub enum PieceType {
     None,
@@ -88,6 +106,7 @@ pub fn piece_type_to_char(piece_type: PieceType) -> char {
     }
 }
 
+#[derive(PartialEq,Clone,Copy)]
 pub struct ChessBoard {
     /**
      * first index is the 8 - rank, the second is file - 1
@@ -159,22 +178,6 @@ const INITIAL_BOARD : ChessBoard =
             [Piece::WhiteRook, Piece::WhiteKnight, Piece::WhiteBishop, Piece::WhiteQueen, Piece::WhiteKing, Piece::WhiteBishop, Piece::WhiteKnight, Piece::WhiteRook],
         ]};
 
-const INITIAL_POSITION: ChessPosition = 
-    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1, 
-    white_king_side_castling: true, black_king_side_castling: true, white_queen_side_castling: true, black_queen_side_castling: true,
-    board: INITIAL_BOARD};
-
-pub struct ChessPosition {
-    pub active_color: ChessColor,
-    pub half_move_clock: u16,
-    pub full_move_number: u16,
-    pub white_king_side_castling: bool,
-    pub black_king_side_castling: bool,
-    pub white_queen_side_castling: bool,
-    pub black_queen_side_castling: bool,
-    pub board: ChessBoard,
-}
-
 #[derive(Debug,PartialEq,Clone,Copy)]
 pub struct Square {
     file: u8,
@@ -226,13 +229,30 @@ impl Square {
 
 }
 
-impl ChessPosition {
+const INITIAL_POSITION: ChessPosition = 
+    ChessPosition{active_color: ChessColor::White, half_move_clock: 0, full_move_number: 1, 
+    white_king_side_castling: true, black_king_side_castling: true, white_queen_side_castling: true, black_queen_side_castling: true,
+    board: INITIAL_BOARD, en_passant_target_square: None};
 
+#[derive(PartialEq,Clone,Copy)]
+pub struct ChessPosition {
+    pub active_color: ChessColor,
+    pub half_move_clock: u16,
+    pub full_move_number: u16,
+    pub white_king_side_castling: bool,
+    pub black_king_side_castling: bool,
+    pub white_queen_side_castling: bool,
+    pub black_queen_side_castling: bool,
+    pub board: ChessBoard,
+    pub en_passant_target_square: Option<Square>,
+}
+
+impl ChessPosition {
     pub fn initial_position() -> ChessPosition {
         INITIAL_POSITION
     }
 
-    pub fn apply_move(&mut self, san_move: &str) {
+    pub fn apply_move(&mut self, san_move: &str) -> Option<String> {
         let capture = san_move.contains("x");
 
         let check = san_move.contains("+");
@@ -314,7 +334,9 @@ impl ChessPosition {
 
                 let to = Square::from_string(&mv);
 
-                println!("To {},{}", to.file, to.rank);
+                let to_piece = self.board.get_piece(to.file, to.rank);
+
+                // println!("To {},{}", to.file, to.rank);
 
                 let piece = self.piece_type_to_piece(piece_type);
 
@@ -339,7 +361,7 @@ impl ChessPosition {
                     }).cloned().collect();
 
                     if from_squares.len() == 1 {
-                        println!("found one", );
+                        // println!("found one", );
                         from_squares.remove(0)
                     } else {
                         // println!("found more {}s", piece_type);
@@ -356,34 +378,88 @@ impl ChessPosition {
                             _ => vec![]
                         };
 
-                        from_squares.retain(|it| reachable.contains(it) && self.board.get_piece(it.file, it.rank) == piece);
+                        from_squares.retain(|it| reachable.contains(it) && self.valid_move(&it, &to, &piece, &to_piece, capture));
 
                         if from_squares.len() == 1 {
                             from_squares.remove(0)
                         } else {
-                            panic!("Cannot disambiguate move {}.", san_move)
+                            return Some("Cannot disambiguate move.".to_owned());
                         }
                     }
                 };
 
                 self.move_piece(from.file, from.rank, to.file, to.rank); // move to board
 
+                if capture && piece_type == PieceType::Pawn && 
+                        self.en_passant_target_square.is_some() && 
+                        self.en_passant_target_square.unwrap() == to {
+                            
+                    if self.active_color == ChessColor::White {
+                        self.board.set_piece(to.file, to.rank - 1, Piece::None);
+                    } else {
+                        self.board.set_piece(to.file, to.rank + 1, Piece::None);
+                    }
+                }
+
                 if promotion.is_some() {
                     let promotion_piece = self.piece_type_to_piece(promotion.unwrap());
                     self.board.set_piece(to.file, to.rank, promotion_piece);
                 }
 
-                if self.active_color == ChessColor::White {
-                    self.active_color = ChessColor::Black;
-                    self.full_move_number += 1; // TODO is it correct?
+                if piece_type == PieceType::Pawn && (from.rank as i8 - to.rank as i8).abs() == 2 {
+                    if self.active_color == ChessColor::White {
+                        self.en_passant_target_square = from.north();
+                    } else {
+                        self.en_passant_target_square = from.south();
+                    }
                 } else {
-                    self.active_color = ChessColor::White;
-                }
-
-                self.half_move_clock += 1;
+                    self.en_passant_target_square = None;
+                }                
 
             }
         }
+
+        self.next_move();
+                
+        None
+
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+
+        if self.active_color == ChessColor::White {
+            s = s.add("White to move\n");
+        } else {
+            s = s.add("Black to move\n");
+        }
+
+        s = s.add(&self.board.to_string());
+
+        s
+    }
+
+    fn valid_move(&self, from: &Square, to: &Square, piece: &Piece, to_piece: &Piece, capture: bool) -> bool {
+        if self.board.get_piece(from.file, from.rank) != *piece {
+            false
+        } else if capture {
+            let en_passant = (*piece == Piece::WhitePawn || *piece == Piece::BlackPawn) && self.en_passant_target_square.is_some() &&
+                self.en_passant_target_square.unwrap() == *to;
+            en_passant || *to_piece != Piece::None && piece_color(to_piece) == other_color(self.active_color)
+        } else {
+            *to_piece == Piece::None
+        }
+    }
+
+    fn next_move(&mut self) {
+        if self.active_color == ChessColor::White {
+            self.active_color = ChessColor::Black;
+            self.full_move_number += 1; // TODO is it correct?
+        } else {
+            self.active_color = ChessColor::White;
+        }
+
+        self.half_move_clock += 1;
     }
 
     fn piece_type_to_piece(&self, piece_type: PieceType) -> Piece {
@@ -406,11 +482,12 @@ impl ChessPosition {
         };
 
         if capture {
+            // TODO en passant
             square.mv(1, rank_dir).iter().for_each(|&it| squares.push(it));
             square.mv(-1, rank_dir).iter().for_each(|&it| squares.push(it));
         } else {
             square.mv(0, rank_dir).iter().for_each(|&it| squares.push(it));
-            let can_move_forward = squares.len() == 1;
+            let can_move_forward = squares.len() == 1 && self.board.get_piece(square.file, (square.rank as i8 + rank_dir) as u8) == Piece::None;
 
             if can_move_forward && (self.active_color == ChessColor::White && square.rank == 4 || 
                     self.active_color == ChessColor::Black && square.rank == 5) {
@@ -504,16 +581,24 @@ impl ChessPosition {
     }
 }
 
-#[derive(Display,Debug,PartialEq)]
+#[derive(Display,Debug,PartialEq,Clone,Copy)]
 pub enum ChessColor {
     White,
     Black
 }
 
+fn other_color(color: ChessColor) -> ChessColor {
+    if color == ChessColor::White {
+        ChessColor::Black
+    } else {
+        ChessColor::White
+    }
+}
+
 #[cfg(test)]
 
 #[test]
-fn apply_move_test() {
+fn apply_move() {
     let mut position = ChessPosition::initial_position();
 
     position.apply_move("e4");
@@ -536,8 +621,15 @@ fn apply_move_test() {
     position.apply_move("Qg4");
     assert_eq!(Piece::WhiteQueen, position.board.get_piece(7, 4));
 
+    let mut position_before_moving_rook = position.clone();
+
     position.apply_move("Rf8");
     assert_eq!(Piece::BlackRook, position.board.get_piece(6, 8));
+
+    position_before_moving_rook.apply_move("O-O");
+    assert_eq!(position_before_moving_rook.active_color, ChessColor::White);
+    assert_eq!(Piece::BlackRook, position_before_moving_rook.board.get_piece(6, 8));
+    assert_eq!(Piece::BlackKing, position_before_moving_rook.board.get_piece(7, 8));
 
     // println!("{}", position.board.to_string());
 

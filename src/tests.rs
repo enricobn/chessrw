@@ -1,11 +1,11 @@
 use base::parser::{ChessGame, ChessGameImpl, ChessParser, ChessParserBuilder, ChessParserIterator};
 use base::writer::ChessWriterBuilder;
 use base::fen::FENParserBuilder;
-use base::position::ChessColor;
 use std::fs::File;
 use std::fs;
 use std::collections::HashMap;
 use std::io::Read;
+use base::position::*;
 
 #[cfg(test)]
 
@@ -175,6 +175,61 @@ fn parse_string() {
     let games : Vec<ChessGameImpl> = p.parse_string(&"1. d4 Nf6 2. c4 e6 3. Nc3 *".to_string()).collect();
 
     assert_eq!(5, games[0].get_moves().len());
+}
+
+#[test]
+fn apply_moves_kramnik() {
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+
+    let file = File::open("testresources/kramnik.pgn");
+
+    let mut count = 1;
+
+    for game in p.parse(file.unwrap()) {
+        let mut position = game.initial_position().unwrap().clone();
+
+        let mut move_count = 1;
+        for mv in game.get_moves() {
+            let result = position.apply_move(mv);
+
+            if result.is_some() {
+                println!("{}", position.to_string());
+
+                panic!("{} for game n. {} move {} (n. {})", result.unwrap(), count, mv, move_count);
+            }
+
+            move_count += 1;
+        }
+
+        count += 1;
+    }
+}
+
+#[test]
+fn apply_move_en_passant() {
+    let fen_parser_builder = FENParserBuilder::new();
+    let fen_parser = fen_parser_builder.build();
+    let mut position = fen_parser.parse("4k3/8/8/8/4p3/8/5P2/4K3 w - - 1 1").unwrap();
+
+    position.apply_move("f4");
+    assert_eq!(Piece::WhitePawn, position.board.get_piece(6, 4));
+    assert_eq!(Some(Square::new(6, 3)), position.en_passant_target_square);
+
+    position.apply_move("exf3");
+    assert_eq!(Piece::BlackPawn, position.board.get_piece(6, 3));
+    assert_eq!(Piece::None, position.board.get_piece(6, 4));
+}
+
+#[test]
+fn apply_move_two_pawns() {
+    let fen_parser_builder = FENParserBuilder::new();
+    let fen_parser = fen_parser_builder.build();
+    let mut position = fen_parser.parse("r1bqkb1r/5p1p/p1np1p2/1p1Np3/4P3/N7/PPP2PPP/R2QKB1R b KQkq - 1 10").unwrap();
+
+    assert_eq!(None, position.apply_move("f5"));
+
+    assert_eq!(Piece::BlackPawn, position.board.get_piece(6, 5));
 }
 
 fn  collect<'a,R: Read>(mut it: ChessParserIterator<'a,R>) -> Vec<ChessGameImpl> {
