@@ -1,3 +1,8 @@
+DOING
+------
+- search for a position (FEN)
+  - apply a SAN move to a ChessPosition
+
 TODO
 -----
 - when writing, try to right justify at 80 chars

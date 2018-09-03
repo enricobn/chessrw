@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use base::tag::*;
 use base::fen::*;
+use base::position::*;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 

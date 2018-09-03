@@ -1,6 +1,7 @@
 use base::parser::{ChessGame, ChessGameImpl, ChessParser, ChessParserBuilder, ChessParserIterator};
 use base::writer::ChessWriterBuilder;
-use base::fen::{ChessColor, FENParserBuilder};
+use base::fen::FENParserBuilder;
+use base::position::ChessColor;
 use std::fs::File;
 use std::fs;
 use std::collections::HashMap;

@@ -5,6 +5,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use base::parser::ChessGame;
 use base::fen::*;
+use base::position::*;
 
 #[derive(Clone)]
 pub struct ChessWriterConfig {
