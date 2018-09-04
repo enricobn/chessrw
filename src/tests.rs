@@ -168,7 +168,7 @@ fn parse_with_tags_filter_test() {
 
 #[test]
 fn parse_double_newline() {    
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/test.pgn");
@@ -185,7 +185,7 @@ fn parse_double_newline() {
 
 #[test]
 fn parse_string() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
     //let games = collect(p.parse_string(&"1. d4 Nf6 2. c4 e6 3. Nc3 *".to_string()));
 
@@ -196,7 +196,7 @@ fn parse_string() {
 
 #[test]
 fn apply_moves_kramnik() {
-    let mut builder = ChessParserBuilder::new();
+    let builder = ChessParserBuilder::new();
     let p = builder.build();
 
     let file = File::open("testresources/kramnik.pgn");

@@ -383,7 +383,7 @@ impl ChessPosition {
                         if from_squares.len() == 1 {
                             from_squares.remove(0)
                         } else {
-                            return Some("Cannot disambiguate move.".to_owned());
+                            return Some("cannot disambiguate move".to_owned());
                         }
                     }
                 };

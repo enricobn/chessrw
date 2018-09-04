@@ -3,14 +3,19 @@ extern crate clap;
 extern crate separator;
 
 use std::fs::File;
-use chessrw::base::parser::*;
-use chessrw::base::writer::*;
 use std::time::Instant;
 use std::time::Duration;
-use clap::{Arg, App, ArgMatches};
 use std::collections::HashMap;
 use std::fs;
+use std::panic;
+
+use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
+
+use chessrw::base::parser::*;
+use chessrw::base::writer::*;
+use chessrw::base::position::*;
+use chessrw::base::fen::*;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
@@ -20,10 +25,11 @@ use separator::Separatable;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,886 games red in 1 second 329 millis.
+ * 81,871 games red in 1 second 412 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,541 games red in 0 seconds 964 millis.
+ * 37,543 games red in 1 second 23 millis.
+ * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {
 
@@ -50,6 +56,7 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. \
                 Put an * as first character to get only games between players. \
                 Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
+            .arg(Arg::with_name("fen").long("fen").takes_value(true))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
@@ -60,7 +67,9 @@ pub fn main() -> std::io::Result<()> {
     let fun = |tags: &HashMap<String,String>| tags_filter.filter(tags);
 
     let mut builder = ChessParserBuilder::new();
+    
     let only_moves = matches.is_present("onlymoves");
+
     if matches.is_present("nocomments")  || only_moves {
         builder.ignore_comments();
     }
@@ -85,6 +94,21 @@ pub fn main() -> std::io::Result<()> {
 
     let start = Instant::now();
 
+    let position = if matches.is_present("fen") {
+        let fen = matches.value_of("fen");
+        if fen.is_some() {
+            let fen_parser_builder = FENParserBuilder::new();
+            let fen_parser = fen_parser_builder.build();
+            Some(fen_parser.parse(fen.unwrap()).unwrap())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let mut parsed = p.parse(file.unwrap());
+
     if matches.is_present("OUTPUT") {
         let file_to_write = File::create(matches.value_of("OUTPUT").unwrap());
         let mut chess_writer_builder = ChessWriterBuilder::new();
@@ -93,23 +117,60 @@ pub fn main() -> std::io::Result<()> {
             chess_writer_builder.notags();
         }
 
-        let mut chess_writer = chess_writer_builder.build(file_to_write.unwrap());
-        
-        let mut count = 0;
+        let chess_writer = ::std::cell::RefCell::new(chess_writer_builder.build(file_to_write.unwrap()));
 
-        let mut parsed = p.parse(file.unwrap());
+        let count = iterate(&mut parsed, position, |it| chess_writer.borrow_mut().write(it).unwrap());
 
-        while parsed.next_temp() {
-            chess_writer.write(&parsed).unwrap();
-            count += 1;
-        }
-        println!("{} games written in {:?}.", count.separated_string(), start.elapsed());
+        println!("{} games written in {}.", count.separated_string(), format_duration(start.elapsed()));
     } else {
-        let count = p.parse(file.unwrap()).size();
+        let count = iterate(&mut parsed, position, |_| ());
+
         println!("{} games red in {}.", count.separated_string(), format_duration(start.elapsed()));
     }
 
     Result::Ok(())
+}
+
+fn iterate<F>(iterator: &mut ChessParserIterator<File>, position: Option<ChessPosition>, f: F) -> i64 where F: Fn(&ChessGame) -> () {
+    let mut count = 0;
+    let mut tot_count = 1;
+
+    while iterator.next_temp() {
+        if position.is_some() {
+            if match contains(iterator, &position.unwrap()) {
+                Ok(value) => value,
+                Err(e) => {
+                    println!("Error in game {}, {}.", tot_count, e);
+                    false
+                }
+            } {
+                f(iterator);
+                count += 1;
+            }
+        } else {
+            f(iterator);
+            count += 1;
+        }
+        tot_count += 1;
+    }
+    count
+}
+
+fn contains(game: &ChessGame, position: &ChessPosition) -> Result<bool,String> {
+    let mut p = game.initial_position().unwrap().clone();
+    let mut count = 1;
+    for mv in game.get_moves().iter() {
+        // println!("Move {} (n. {})", mv, count);
+        let applied = p.apply_move(mv);
+        if applied.is_some() {
+            return Err(format!("move {} (n. {}): {}", mv, count, applied.unwrap()));
+        }
+        if p.board == position.board {
+            return Ok(true);
+        }
+        count += 1;
+    }
+    Ok(false)
 }
 
 fn format_duration(duration: Duration) -> String {
