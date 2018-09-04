@@ -167,6 +167,23 @@ fn parse_with_tags_filter_test() {
 }
 
 #[test]
+fn parse_double_newline() {    
+    let mut builder = ChessParserBuilder::new();
+    let p = builder.build();
+
+    let file = File::open("testresources/test.pgn");
+
+    let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
+
+    games[4].get_moves().iter().for_each(|it| println!("{}", it));
+
+    assert_eq!(5, games[4].get_moves().len());
+    
+    assert_eq!("d4", games[4].get_moves()[0]);
+}
+
+
+#[test]
 fn parse_string() {
     let mut builder = ChessParserBuilder::new();
     let p = builder.build();

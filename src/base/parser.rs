@@ -548,7 +548,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
         self.buf.clear();
         self.moves.clear(); 
         self.curr_move.clear();
-        self.status = Status::Headings;
+        self.status = Status::Ready;
         self.not_parsed.clear();
         self.result_from_moves.clear();
         self.tags.clear();
@@ -561,6 +561,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
         self.result_from_tag.clear();
         self.variation_count= 0;
         self.nags.clear();
+        self.last_char = char::from_digit(0, 10).unwrap();
     }
 
 }
