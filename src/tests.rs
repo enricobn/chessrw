@@ -249,6 +249,15 @@ fn apply_move_two_pawns() {
     assert_eq!(Piece::BlackPawn, position.board.get_piece(6, 5));
 }
 
+#[test]
+fn king_in_check_knight() {
+    let fen_parser_builder = FENParserBuilder::new();
+    let fen_parser = fen_parser_builder.build();
+    let mut position = fen_parser.parse("4k3/8/3N4/8/8/8/8/4K3 w KQkq - 0 1").unwrap();
+
+    assert_eq!(true, position.king_in_check(ChessColor::Black));
+}
+
 fn  collect<'a,R: Read>(mut it: ChessParserIterator<'a,R>) -> Vec<ChessGameImpl> {
     let mut result = Vec::new();
 
