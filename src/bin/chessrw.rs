@@ -7,7 +7,8 @@ use std::time::Instant;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::fs;
-use std::panic;
+use std::thread;
+use std::sync::{Arc,Mutex};
 
 use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
@@ -57,9 +58,11 @@ pub fn main() -> std::io::Result<()> {
                 Put an * as first character to get only games between players. \
                 Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
             .arg(Arg::with_name("fen").long("fen").takes_value(true))
+            .arg(Arg::with_name("threads").long("threads").takes_value(true).help("Number of threads to use, it's used only when fen is used."))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();
+
     println!("Reading file {} ...", &input);
 
     let tags_filter = TagsFilter::new(&matches);
@@ -107,6 +110,12 @@ pub fn main() -> std::io::Result<()> {
         None
     };
 
+    let threads = if matches.is_present("threads") && matches.is_present("fen") {
+        matches.value_of("threads").unwrap().parse::<u8>().unwrap()
+    } else {
+        1
+    };
+
     let mut parsed = p.parse(file.unwrap());
 
     if matches.is_present("OUTPUT") {
@@ -117,13 +126,21 @@ pub fn main() -> std::io::Result<()> {
             chess_writer_builder.notags();
         }
 
-        let chess_writer = ::std::cell::RefCell::new(chess_writer_builder.build(file_to_write.unwrap()));
+        let count = if threads > 1 {
+            iterate_with_threads(&mut parsed, position, Some(chess_writer_builder.build(file_to_write.unwrap())), threads)
+        } else {
+            let chess_writer = ::std::cell::RefCell::new(chess_writer_builder.build(file_to_write.unwrap()));
 
-        let count = iterate(&mut parsed, position, |it| chess_writer.borrow_mut().write(it).unwrap());
+            iterate(&mut parsed, position, |it| chess_writer.borrow_mut().write(it).unwrap())
+        };
 
         println!("{} games written in {}.", count.separated_string(), format_duration(start.elapsed()));
     } else {
-        let count = iterate(&mut parsed, position, |_| ());
+        let count = if threads > 1 { 
+            iterate_with_threads(&mut parsed, position, None, threads)
+        } else {
+            iterate(&mut parsed, position, |_| ())
+        };
 
         println!("{} games red in {}.", count.separated_string(), format_duration(start.elapsed()));
     }
@@ -154,6 +171,113 @@ fn iterate<F>(iterator: &mut ChessParserIterator<File>, position: Option<ChessPo
         tot_count += 1;
     }
     count
+}
+
+fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Option<ChessPosition>, writer: Option<ChessWriter>, 
+        threads_count: u8) -> i64 {
+    let count_arc = Arc::new(Mutex::new(0));
+    let ended_arc = Arc::new(Mutex::new(false));
+    let games_to_check_arc : Arc<Mutex<Vec<ChessGameImpl>>> = Arc::new(Mutex::new(Vec::new()));
+    let writer_arc = Arc::new(Mutex::new(writer));
+
+    let mut tot_count = 1;
+
+    let mut threads = Vec::new();
+
+    for i in 0..threads_count {
+        let games_to_check_for_thread = games_to_check_arc.clone();
+        let count_for_thread = count_arc.clone();
+        let ended_for_thread = ended_arc.clone();
+        let writer_for_thread = writer_arc.clone();
+
+        threads.push(thread::spawn(move || {
+            loop {
+
+                let mut game = None;
+
+                {
+                    let mut locked_gtc = games_to_check_for_thread.lock().unwrap();
+                    if !locked_gtc.is_empty() {
+                        game = Some(locked_gtc.remove(0));
+                    }
+                }
+
+                if game.is_some() {
+                    if match contains(&game.unwrap(), &position.unwrap()) {
+                            Ok(value) => value,
+                            Err(e) => {
+                                println!("Error in game {}, {}.", tot_count, e);
+                                false
+                            }
+                        } {
+                            {
+                                let mut locked_ct = count_for_thread.lock().unwrap();
+                                *locked_ct += 1;
+                            }
+
+                            // TODO
+                            /*
+                            let mut locked_writer = writer_for_thread.lock().unwrap();
+                            
+                            match *locked_writer {
+                                Some(lw) => lw.write(&game.unwrap()).unwrap(),
+                                None => ()
+                            };
+                            */
+                        }
+                } else {
+                    let locked_ended = ended_for_thread.lock().unwrap();
+                    if *locked_ended {
+                        break;
+                    }   
+                }
+                
+                // if !&game.is_some() {
+                    // thread::sleep(Duration::from_millis(5));
+                // }
+            }
+        }));
+    }
+
+    let games_to_check_for_main = games_to_check_arc.clone();
+
+    while iterator.next_temp() {
+        // if position.is_some() {
+            let mut locked_gtc = games_to_check_for_main.lock().unwrap();
+            locked_gtc.push(iterator.to_game());
+            // println!("tot_count {}", tot_count);
+
+            /*if match contains(iterator, &position.unwrap()) {
+                Ok(value) => value,
+                Err(e) => {
+                    println!("Error in game {}, {}.", tot_count, e);
+                    false
+                }
+            } {
+                f(iterator);
+                count += 1;
+            }*/
+
+        // } else {
+            // f(iterator);
+            // count += 1;
+        // }
+        tot_count += 1;
+    }
+
+    {
+        let ended_for_main = ended_arc.clone();
+        let mut ended = ended_for_main.lock().unwrap();
+        *ended = true;
+    }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let count_for_thread = count_arc.clone();
+    let count = count_for_thread.lock().unwrap();
+    *count
 }
 
 fn contains(game: &ChessGame, position: &ChessPosition) -> Result<bool,String> {

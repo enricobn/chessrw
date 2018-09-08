@@ -1,9 +1,11 @@
 DOING
 ------
-- search for a position (FEN)
+- threads
+  - fix write when threads
 
 TODO
 -----
+- don't sort help flags / options
 - when writing, try to right justify at 80 chars
 - flag to retain tags order
 - optimize (can I remove clone on creation of ChessGame?)
