@@ -1,7 +1,5 @@
 DOING
 ------
-- threads
-  - fix write when threads
 
 TODO
 -----

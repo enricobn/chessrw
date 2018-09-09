@@ -533,7 +533,7 @@ impl ChessPosition {
                 let mut from_squares = self.board.find_piece(piece);
 
                 let from = if from_squares.len() == 1 {
-                    from_squares.remove(0)
+                    from_squares.pop().unwrap()
                 } else {
                     from_squares = from_squares.iter().filter(|it| {
                         if from_file.is_some() {
@@ -551,7 +551,7 @@ impl ChessPosition {
 
                     if from_squares.len() == 1 {
                         // println!("found one", );
-                        from_squares.remove(0)
+                        from_squares.pop().unwrap()
                     } else {
                         // println!("found more {}s", piece_type);
 
@@ -570,7 +570,7 @@ impl ChessPosition {
                         from_squares.retain(|it| reachable.contains(it) && self.valid_move(&it, &to, &piece, &to_piece, capture));
 
                         if from_squares.len() == 1 {
-                            from_squares.remove(0)
+                            from_squares.pop().unwrap()
                         } else {
 
                             let cloned = self.clone();
