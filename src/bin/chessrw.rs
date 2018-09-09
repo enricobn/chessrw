@@ -8,7 +8,7 @@ use std::time::Duration;
 use std::collections::HashMap;
 use std::fs;
 use std::thread;
-use std::sync::{Arc,Mutex};
+use std::sync::{Arc,Mutex,MutexGuard};
 
 use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
@@ -26,10 +26,10 @@ use chessrw::base::fen::*;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,871 games red in 1 second 412 millis.
+ * 81,871 games red in 1 second 358 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,543 games red in 1 second 23 millis.
+ * 37,543 games red in 982 millis.
  * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {
@@ -113,7 +113,7 @@ pub fn main() -> std::io::Result<()> {
     let threads = if matches.is_present("threads") && matches.is_present("fen") {
         matches.value_of("threads").unwrap().parse::<u8>().unwrap()
     } else {
-        1
+        0
     };
 
     let mut parsed = p.parse(file.unwrap());
@@ -136,7 +136,7 @@ pub fn main() -> std::io::Result<()> {
 
         println!("{} games written in {}.", count.separated_string(), format_duration(start.elapsed()));
     } else {
-        let count = if threads > 1 { 
+        let count = if threads > 1 {
             iterate_with_threads(&mut parsed, position, None, threads)
         } else {
             iterate(&mut parsed, position, |_| ())
@@ -184,7 +184,7 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
 
     let mut threads = Vec::new();
 
-    for i in 0..threads_count {
+    for _ in 0..threads_count {
         let games_to_check_for_thread = games_to_check_arc.clone();
         let count_for_thread = count_arc.clone();
         let ended_for_thread = ended_arc.clone();
@@ -197,13 +197,13 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
 
                 {
                     let mut locked_gtc = games_to_check_for_thread.lock().unwrap();
-                    if !locked_gtc.is_empty() {
-                        game = Some(locked_gtc.remove(0));
-                    }
+                    game = locked_gtc.pop();
                 }
 
                 if game.is_some() {
-                    if match contains(&game.unwrap(), &position.unwrap()) {
+                    let g = game.unwrap();
+
+                    if match contains(&g, &position.unwrap()) {
                             Ok(value) => value,
                             Err(e) => {
                                 println!("Error in game {}, {}.", tot_count, e);
@@ -215,15 +215,12 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
                                 *locked_ct += 1;
                             }
 
-                            // TODO
-                            /*
                             let mut locked_writer = writer_for_thread.lock().unwrap();
-                            
+
                             match *locked_writer {
-                                Some(lw) => lw.write(&game.unwrap()).unwrap(),
-                                None => ()
-                            };
-                            */
+                                    Some(ref mut x) => x.write(&g).unwrap(),
+                                    None => (),
+                                };                            
                         }
                 } else {
                     let locked_ended = ended_for_thread.lock().unwrap();
@@ -242,26 +239,8 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
     let games_to_check_for_main = games_to_check_arc.clone();
 
     while iterator.next_temp() {
-        // if position.is_some() {
-            let mut locked_gtc = games_to_check_for_main.lock().unwrap();
-            locked_gtc.push(iterator.to_game());
-            // println!("tot_count {}", tot_count);
-
-            /*if match contains(iterator, &position.unwrap()) {
-                Ok(value) => value,
-                Err(e) => {
-                    println!("Error in game {}, {}.", tot_count, e);
-                    false
-                }
-            } {
-                f(iterator);
-                count += 1;
-            }*/
-
-        // } else {
-            // f(iterator);
-            // count += 1;
-        // }
+        let mut locked_gtc = games_to_check_for_main.lock().unwrap();
+        locked_gtc.push(iterator.to_game());
         tot_count += 1;
     }
 
@@ -270,6 +249,8 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
         let mut ended = ended_for_main.lock().unwrap();
         *ended = true;
     }
+
+    // println!("Waiting for threads.", );
 
     for thread in threads {
         thread.join().unwrap();
