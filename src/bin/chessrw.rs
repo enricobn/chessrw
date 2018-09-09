@@ -8,7 +8,8 @@ use std::time::Duration;
 use std::collections::HashMap;
 use std::fs;
 use std::thread;
-use std::sync::{Arc,Mutex,MutexGuard};
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
@@ -176,7 +177,7 @@ fn iterate<F>(iterator: &mut ChessParserIterator<File>, position: Option<ChessPo
 fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Option<ChessPosition>, writer: Option<ChessWriter>, 
         threads_count: u8) -> i64 {
     let count_arc = Arc::new(Mutex::new(0));
-    let ended_arc = Arc::new(Mutex::new(false));
+    let ended_arc = Arc::new(AtomicBool::new(false));
     let games_to_check_arc : Arc<Mutex<Vec<ChessGameImpl>>> = Arc::new(Mutex::new(Vec::new()));
     let writer_arc = Arc::new(Mutex::new(writer));
 
@@ -223,10 +224,9 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
                                 };                            
                         }
                 } else {
-                    let locked_ended = ended_for_thread.lock().unwrap();
-                    if *locked_ended {
+                    if ended_for_thread.load(Ordering::Relaxed) {
                         break;
-                    }   
+                    }
                 }
                 
                 // if !&game.is_some() {
@@ -246,8 +246,7 @@ fn iterate_with_threads(iterator: &mut ChessParserIterator<File>, position: Opti
 
     {
         let ended_for_main = ended_arc.clone();
-        let mut ended = ended_for_main.lock().unwrap();
-        *ended = true;
+        ended_for_main.store(true, Ordering::Relaxed);
     }
 
     // println!("Waiting for threads.", );
