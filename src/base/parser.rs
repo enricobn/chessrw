@@ -114,8 +114,6 @@ pub struct ChessParserIterator<'a,R: Read> {
     comments: HashMap<Int,String>,
     tag_key: String,
     tag_value: String,
-    reason: GameResultReason,
-    result_from_tag: String,
     variation_count: i32,
     nags: HashMap<Int,Vec<String>>,
     ch: char,
@@ -162,8 +160,8 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
             not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
-            tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, 
-            result_from_tag: String::new(), variation_count: 0, nags: HashMap::new(), 
+            tag_key: String::new(), tag_value: String::new(),  
+            variation_count: 0, nags: HashMap::new(), 
             ch: char::from_digit(0, 10).unwrap(), skip_game: false, bytes: 0, 
             progress_bar: pb, errors: Vec::new(), line: 0};
     }
@@ -233,12 +231,6 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
         if c == ']' {
             if !self.tag_key.is_empty() && !self.tag_value.is_empty() {
                 self.tags.insert(self.tag_key.clone(), self.tag_value.clone());
-                if &self.tag_key as &str == "Termination" {
-                    // TODO check result of result_from_pgn, avoid clone
-                    self.reason = result_from_pgn(&self.tag_value).unwrap();
-                } else if &self.tag_key as &str == "Result" {
-                    self.result_from_tag = self.tag_value.clone();
-                }
             }
             self.status = Status::Headings;
             self.tag_key.clear();
@@ -568,8 +560,6 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
         self.comments.clear();
         self.tag_key.clear();
         self.tag_value.clear();
-        self.reason = GameResultReason::Normal;
-        self.result_from_tag.clear();
         self.variation_count= 0;
         self.nags.clear();
         self.last_char = char::from_digit(0, 10).unwrap();
