@@ -29,10 +29,10 @@ use chessrw::base::game::*;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,871 games red in 1 second 251 millis.
+ * 81,871 games red in 1 second 454 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,543 games red in 960 millis.
+ * 37,543 games red in 1 second 55 millis.
  * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {
