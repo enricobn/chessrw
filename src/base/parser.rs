@@ -5,11 +5,14 @@ use std::io::Read;
 use std::char;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+
+use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
+
 use base::tag::*;
 use base::fen::*;
 use base::position::*;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
+use base::game::*;
 
 #[derive(Clone)]
 pub struct ChessParserConfig<'a> {
@@ -167,10 +170,8 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
     }
 
     pub fn to_game(&self) -> ChessGameImpl {
-        ChessGameImpl{tags: self.tags.clone(), moves: self.moves.clone(), 
-            comments: self.comments.clone(), variations: self.variations.clone(),
-            after_variations_comments: self.after_variations_comments.clone(),
-            game_result: self.result_from_moves.clone(), nags: self.nags.clone()}
+        ChessGameImpl::new(self.tags.clone(), self.moves.clone(), self.comments.clone(), self.variations.clone(),
+            self.after_variations_comments.clone(), self.result_from_moves.clone(), self.nags.clone())
     }
 
     pub fn get_errors(&self) -> &Vec<String> {
@@ -318,8 +319,8 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
             let count = self.file_reader.read_line(&mut self.buf);
 
             self.line += 1;
-            /*if self.lines % 100_000 == 0 {
-                println!("{}", self.lines);
+            /*if self.line % 100_000 == 0 {
+                println!("{}", self.line);
             }*/
             
             if count.is_err() {
@@ -611,123 +612,6 @@ impl <'a,R: Read> Iterator for ChessParserIterator<'a,R> {
             Some(self.to_game())
         } else {
             None
-        }
-    }
-}
-
-pub struct ChessGameImpl {
-    tags: HashMap<String,String>,
-    moves: Vec<String>,
-    comments: HashMap<Int,String>,
-    variations: HashMap<Int,Vec<String>>,
-    after_variations_comments: HashMap<Int,HashMap<Int,String>>,
-    game_result: String,
-    nags: HashMap<Int,Vec<String>>,
-}
-
-lazy_static! {
-    static ref FEN_PARSER: FENParser = {
-        FENParserBuilder::new().build()
-    };
-}
-
-pub trait ChessGame {
-
-    fn get_tags(&self) -> &HashMap<String,String>;
-
-    fn get_moves(&self) -> &Vec<String>;
-
-    fn get_before_moves_comment(&self) -> Option<&String>;
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_comment(&self, after_move: Int) -> Option<&String>;
-
-    fn get_game_result(&self) -> &String;
-
-    fn initial_position(&self) -> Result<ChessPosition,String>;
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_nags(&self, after_move: Int) -> Option<&Vec<String>>;
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_variations(&self, after_move: Int) -> Option<&Vec<String>>;
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     * * `after_variation_move` is zero based
-     */
-    fn get_after_variation_comment(&self, after_move: Int, after_variation_move: Int) -> Option<&String>;
-}
-
-impl ChessGame for ChessGameImpl {
-
-    fn get_tags(&self) -> &HashMap<String,String> {
-        &self.tags
-    }
-
-    fn get_moves(&self) -> &Vec<String> {
-        &self.moves
-    }
-
-    fn get_before_moves_comment(&self) -> Option<&String> {
-        self.comments.get(&-1)
-    }
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_comment(&self, after_move: Int) -> Option<&String> {
-        self.comments.get(&after_move)
-    }
-
-    fn get_game_result(&self) -> &String {
-        &self.game_result
-    }
-
-    fn initial_position(&self) -> Result<ChessPosition,String> {
-        match self.tags.get(&Tag::FEN.to_string()) {
-            // TODO error handling
-            Some(fen) => FEN_PARSER.parse(fen),
-            _ => Result::Ok(ChessPosition::initial_position())
-        }
-    }
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_nags(&self, after_move: Int) -> Option<&Vec<String>> {
-        self.nags.get(&after_move)
-    }
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     */
-    fn get_variations(&self, after_move: Int) -> Option<&Vec<String>> {
-        self.variations.get(&after_move)
-    }
-
-    /** 
-     * # Arguments
-     * * `after_move` is zero based.
-     * * `after_variation_move` is zero based
-     */
-    fn get_after_variation_comment(&self, after_move: Int, after_variation_move: Int) -> Option<&String> {
-        match self.after_variations_comments.get(&after_move) {
-            Some(avc) => avc.get(&after_variation_move),
-            _ => None
         }
     }
 }

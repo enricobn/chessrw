@@ -3,8 +3,7 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::io::Error;
 use std::io::ErrorKind;
-use base::parser::ChessGame;
-use base::fen::*;
+use base::game::ChessGame;
 use base::position::*;
 
 #[derive(Clone)]

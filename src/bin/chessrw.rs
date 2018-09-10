@@ -18,6 +18,7 @@ use chessrw::base::parser::*;
 use chessrw::base::writer::*;
 use chessrw::base::position::*;
 use chessrw::base::fen::*;
+use chessrw::base::game::*;
 
 /**
  * ficsgamesdb_201801_standard_nomovetimes_14117.pgn
@@ -27,10 +28,10 @@ use chessrw::base::fen::*;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,871 games red in 1 second 384 millis.
+ * 81,871 games red in 1 second 372 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,543 games red in 1 second 9 millis.
+ * 37,543 games red in 997 millis.
  * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {

@@ -1,10 +1,12 @@
-use base::parser::{ChessGame, ChessGameImpl, ChessParser, ChessParserBuilder, ChessParserIterator};
-use base::writer::ChessWriterBuilder;
-use base::fen::FENParserBuilder;
 use std::fs::File;
 use std::fs;
 use std::collections::HashMap;
 use std::io::Read;
+
+use base::fen::FENParserBuilder;
+use base::game::*;
+use base::parser::*;
+use base::writer::ChessWriterBuilder;
 use base::position::*;
 
 #[cfg(test)]

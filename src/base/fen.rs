@@ -1,5 +1,11 @@
 use base::position::*;
 
+lazy_static! {
+    pub static ref FEN_PARSER: FENParser = {
+        FENParserBuilder::new().build()
+    };
+}
+
 pub struct FENParserBuilder {
 }
 
