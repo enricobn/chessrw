@@ -90,9 +90,9 @@ pub fn main() -> std::io::Result<()> {
     let file = File::open(&input);
     println!("File size: {} bytes.", metadata.len().separated_string());
 
-    if !matches.is_present("noprogress") {
-        builder.file_size(metadata.len());
-    }
+    builder.file_size(metadata.len());
+
+    builder.progress(!matches.is_present("noprogress") && metadata.len() >= 1_000_000);
 
     let p = builder.build();
 

@@ -18,6 +18,7 @@ pub struct ChessParserConfig<'a> {
     tag_filter: Option<&'a Fn(&HashMap<String,String>) -> bool>,
     debug: bool,
     file_size: u64,
+    progress: bool,
 }
 
 pub struct ChessParserBuilder<'a> {
@@ -28,7 +29,7 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn new() -> Self {
         return ChessParserBuilder{config: ChessParserConfig{ignore_comments: false, ignore_variations: false, 
-            tag_filter: None, debug: false, file_size: 0}};
+            tag_filter: None, debug: false, file_size: 0, progress: false}};
     }
 
     pub fn ignore_comments(&mut self) {
@@ -49,6 +50,10 @@ impl <'a> ChessParserBuilder<'a> {
 
     pub fn file_size(&mut self, size: u64) {
         self.config.file_size = size;
+    }
+
+    pub fn progress(&mut self, progress: bool) {
+        self.config.progress = progress;
     }
 
     pub fn build(&self) -> ChessParserImpl {
@@ -326,7 +331,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
 
             let bytes = count.unwrap();
 
-            if self.config.file_size > 1_000_000 {
+            if self.config.progress {
                 self.bytes += bytes;
                 if self.bytes > 100_000 {
                     self.progress_bar.inc(self.bytes as u64);
@@ -336,7 +341,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
 
             if bytes <= 0 {
                 if self.moves.is_empty() {
-                    if self.config.file_size > 1_000_000 {
+                    if self.config.progress {
                         self.progress_bar.inc(self.bytes as u64);
                     }
                     return false;
