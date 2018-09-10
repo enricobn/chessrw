@@ -78,7 +78,18 @@ impl FENParser {
                             " (" + new String(cbuf) + ")", e);
                     }
                     */
-                    chessboard.set_piece(file, rank, char_to_piece(c));
+
+                    let piece_result = char_to_piece(c);
+
+                    if piece_result.is_err() {
+                        return Err(format!("Error parsing fen at offset {} : {}", offset, piece_result.unwrap_err()));
+                    }
+
+                    let result = chessboard.set_piece(file, rank, piece_result.unwrap());
+
+                    if result.is_some() {
+                        return Err(format!("Error parsing fen at offset {} : {}", offset, result.unwrap()));
+                    }
                     file += 1;
                 }
 
@@ -119,7 +130,12 @@ impl FENParser {
         }
 
         let en_passant_target_square = if en_passant_target_square_string.len() > 0 {
-            Some(Square::from_string(&en_passant_target_square_string))
+            let result = Square::from_string(&en_passant_target_square_string);
+
+            if result.is_err() {
+                return Err(result.unwrap_err());
+            }
+            Some(result.unwrap())
         } else {
             None
         };

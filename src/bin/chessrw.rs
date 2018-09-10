@@ -2,14 +2,15 @@ extern crate chessrw;
 extern crate clap;
 extern crate separator;
 
-use std::fs::File;
-use std::time::Instant;
-use std::time::Duration;
 use std::collections::HashMap;
+use std::io::{Error, ErrorKind};
 use std::fs;
-use std::thread;
+use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
+use std::time::Instant;
+use std::time::Duration;
 
 use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
@@ -28,10 +29,10 @@ use chessrw::base::game::*;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,871 games red in 1 second 372 millis.
+ * 81,871 games red in 1 second 251 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,543 games red in 997 millis.
+ * 37,543 games red in 960 millis.
  * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {
@@ -102,9 +103,12 @@ pub fn main() -> std::io::Result<()> {
     let position = if matches.is_present("fen") {
         let fen = matches.value_of("fen");
         if fen.is_some() {
-            let fen_parser_builder = FENParserBuilder::new();
-            let fen_parser = fen_parser_builder.build();
-            Some(fen_parser.parse(fen.unwrap()).unwrap())
+            let result = FEN_PARSER.parse(fen.unwrap());
+            
+            match result {
+                Ok(p) => Some(p),
+                Err(e) => return Err(Error::new(ErrorKind::Other, format!("Error parsing fen option: {}", e)))
+            }
         } else {
             None
         }
@@ -273,7 +277,7 @@ fn contains(game: &ChessGame, position: &ChessPosition) -> Result<bool,String> {
         // println!("Move {} (n. {})", mv, count);
         let applied = p.apply_move(mv);
         if applied.is_some() {
-            return Err(format!("move {} (n. {}): {}", mv, count, applied.unwrap()));
+            return Err(format!("move n. {}: {}", count, applied.unwrap()));
         }
         if p.board == position.board {
             return Ok(true);

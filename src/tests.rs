@@ -176,7 +176,7 @@ fn parse_double_newline() {
     let file = File::open("testresources/test.pgn");
 
     let games : Vec<ChessGameImpl> = collect(p.parse(file.unwrap()));
-
+    
     games[4].get_moves().iter().for_each(|it| println!("{}", it));
 
     assert_eq!(5, games[4].get_moves().len());
@@ -233,7 +233,7 @@ fn apply_move_en_passant() {
 
     position.apply_move("f4");
     assert_eq!(Piece::WhitePawn, position.board.get_piece(6, 4));
-    assert_eq!(Some(Square::new(6, 3)), position.en_passant_target_square);
+    assert_eq!(Some(Square::new(6, 3).unwrap()), position.en_passant_target_square);
 
     position.apply_move("exf3");
     assert_eq!(Piece::BlackPawn, position.board.get_piece(6, 3));

@@ -19,21 +19,22 @@ pub enum Piece {
     BlackKing,
 }
 
-pub fn char_to_piece(c: char) -> Piece {
+pub fn char_to_piece(c: char) -> Result<Piece, String> {
     match c {
-        'P' => Piece::WhitePawn,
-        'p' => Piece::BlackPawn,
-        'B' => Piece::WhiteBishop,
-        'b' => Piece::BlackBishop,
-        'N' => Piece::WhiteKnight,
-        'n' => Piece::BlackKnight,
-        'R' => Piece::WhiteRook,
-        'r' => Piece::BlackRook,
-        'Q' => Piece::WhiteQueen,
-        'q' => Piece::BlackQueen,
-        'K' => Piece::WhiteKing,
-        'k' => Piece::BlackKing,
-        _ => Piece::None
+        'P' => Ok(Piece::WhitePawn),
+        'p' => Ok(Piece::BlackPawn),
+        'B' => Ok(Piece::WhiteBishop),
+        'b' => Ok(Piece::BlackBishop),
+        'N' => Ok(Piece::WhiteKnight),
+        'n' => Ok(Piece::BlackKnight),
+        'R' => Ok(Piece::WhiteRook),
+        'r' => Ok(Piece::BlackRook),
+        'Q' => Ok(Piece::WhiteQueen),
+        'q' => Ok(Piece::BlackQueen),
+        'K' => Ok(Piece::WhiteKing),
+        'k' => Ok(Piece::BlackKing),
+        ' ' => Ok(Piece::None),
+        _ => Err(format!("Unknown piece {}.", c))
     }
 }
 
@@ -80,7 +81,7 @@ fn piece_type_to_piece(piece_type: PieceType, color: ChessColor) -> Piece {
         piece_char = piece_char.to_lowercase().next().unwrap();
     }
 
-    char_to_piece(piece_char)
+    char_to_piece(piece_char).unwrap()
 }
 
 #[derive(Display,Debug,PartialEq,Clone,Copy)]
@@ -136,10 +137,14 @@ impl ChessBoard {
         INITIAL_BOARD
     }
 
-    pub fn set_piece(&mut self, file: u8, rank: u8, piece: Piece) {
+    pub fn set_piece(&mut self, file: u8, rank: u8, piece: Piece) -> Option<String> {
+        if file < 1 || file > 8 || rank < 1 || rank > 8 {
+            return Some(format!("Invalid square ({}, {}).", file, rank));
+        }
         let r = (8 - rank) as usize;
         let f = (file - 1) as usize;
         self.pieces[r][f] = piece;
+        None
     }
 
     pub fn get_piece(&self, file: u8, rank: u8) -> Piece {
@@ -154,7 +159,7 @@ impl ChessBoard {
         for (rank, row) in self.pieces.iter().enumerate() {
             for (file, p) in row.iter().enumerate() {
                 if *p == piece {
-                    squares.push(Square::new(file as u8 + 1, 8 - rank as u8 ));
+                    squares.push(Square::new(file as u8 + 1, 8 - rank as u8 ).unwrap());
                 }
             }
         }
@@ -266,31 +271,39 @@ impl ChessBoard {
     pub fn reacheable_from_king(square: &Square) -> Vec<Square> {
         let mut squares = Vec::new();
 
-        squares.push(square.mv(-1, -1));
-        squares.push(square.mv(0, -1));
-        squares.push(square.mv(1, -1));
-        squares.push(square.mv(-1, 0));
-        squares.push(square.mv(1, 0));
-        squares.push(square.mv(-1, 1));
-        squares.push(square.mv(0, 1));
-        squares.push(square.mv(1, 1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, -1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(0, -1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(1, -1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, 0));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(1, 0));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, 1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(0, 1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(1, 1));
 
-        squares.iter().filter(|it| it.is_some()).map(|it| it.unwrap()).collect()
+        squares
     }
 
     pub fn reacheable_from_knight(square: &Square) -> Vec<Square> {
         let mut squares = Vec::new();
 
-        squares.push(square.mv(-2, -1));
-        squares.push(square.mv(-1, -2));
-        squares.push(square.mv(1, -2));
-        squares.push(square.mv(2, -1));
-        squares.push(square.mv(-2, 1));
-        squares.push(square.mv(-1, 2));
-        squares.push(square.mv(1, 2));
-        squares.push(square.mv(2, 1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-2, -1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, -2));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(1, -2));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(2, -1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-2, 1));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, 2));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(1, 2));
+        ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(2, 1));
 
-        squares.iter().filter(|it| it.is_some()).map(|it| it.unwrap()).collect()
+        squares
+    }
+
+    fn add_to_squares_if_ok(squares: &mut Vec<Square>, square_result: Result<Square, String>) {
+        if square_result.is_err() {
+            return;
+        }
+
+        squares.push(square_result.unwrap());
     }
 
     pub fn reacheable_from_sliding_piece(&self, square: &Square, diagonal: bool, straight: bool) -> Vec<Square> {
@@ -323,13 +336,14 @@ impl ChessBoard {
         loop {
             let s = square.mv(file_offset * i, rank_offset * i);
             
-            if !s.is_some() {
+            if !s.is_ok() {
                 break;
             }
 
-            squares.push(s.unwrap());
+            let s = s.unwrap();
+            squares.push(s);
 
-            if self.get_piece(s.unwrap().file, s.unwrap().rank) != Piece::None {
+            if self.get_piece(s.file, s.rank) != Piece::None {
                 break;
             }
 
@@ -375,11 +389,20 @@ impl fmt::Debug for Square {
 
 impl Square {
 
-    pub fn new(file: u8, rank: u8) -> Square {
-        Square{file: file, rank: rank}
+    pub fn new(file: u8, rank: u8) -> Result<Square,String> {
+
+        if file >= 1 && file <= 8 && rank >= 1 && rank <= 8 {
+            Ok(Square{file: file, rank: rank})
+        } else {
+            Err(format!("Invalid square indices ({},{}).", file, rank))
+        }
     }
 
-    pub fn from_string(square: &String) -> Square {
+    pub fn from_string(square: &String) -> Result<Square,String> {
+        if square.len() != 2 {
+            return Err(format!("Invalid square {}.", square));
+        }
+
         let file_char = square.chars().next().unwrap();
         let rank_char = square.chars().skip(1).next().unwrap();
 
@@ -389,31 +412,27 @@ impl Square {
         Square::new(file, rank)
     }
 
-    pub fn north(&self) -> Option<Square> {
+    pub fn north(&self) -> Result<Square,String> {
         self.mv(0, 1)
     }
 
-    pub fn south(&self) -> Option<Square> {
+    pub fn south(&self) -> Result<Square,String> {
         self.mv(0, -1)
     }
 
-    pub fn east(&self) -> Option<Square> {
+    pub fn east(&self) -> Result<Square,String> {
         self.mv(1, 0)
     }
 
-    pub fn west(&self) -> Option<Square> {
+    pub fn west(&self) -> Result<Square,String> {
         self.mv(-1, 0)
     }
 
-    pub fn mv(&self, file: i8, rank: i8) -> Option<Square> {
+    pub fn mv(&self, file: i8, rank: i8) -> Result<Square,String> {
         let file = self.file as i8 + file;
         let rank = self.rank as i8 + rank;
 
-        if file < 1 || file > 8 || rank < 1 || rank > 8 {
-            None
-        } else {
-            Some(Square::new(file as u8, rank as u8))
-        }
+        Square::new(file as u8, rank as u8)
     }
 
 }
@@ -499,8 +518,21 @@ impl ChessPosition {
 
             // disambiguation: the from square has been specified 
             if mv.len() == 4 {
-                let from = Square::from_string(&mv.chars().take(2).collect());
-                let to = Square::from_string(&mv.chars().skip(2).take(2).collect());
+                let from_result = Square::from_string(&mv.chars().take(2).collect());
+
+                if from_result.is_err() {
+                    return Some(from_result.unwrap_err());
+                }
+
+                let from = from_result.unwrap();
+
+                let to_result = Square::from_string(&mv.chars().skip(2).take(2).collect());
+
+                if to_result.is_err() {
+                    return Some(to_result.unwrap_err());
+                }
+
+                let to = to_result.unwrap();
 
                 self.move_piece(from.file, from.rank, to.file, to.rank);
 
@@ -513,15 +545,27 @@ impl ChessPosition {
                     let first = mv.chars().next().unwrap();
 
                     if first.is_digit(10) {
+                        if first < '1' || first > '8' {
+                            return Some(format!("move {}, invalid rank {}", san_move, first))
+                        }
                         from_rank = Some(first as u8 - '0' as u8);
                     } else {
+                        if first < 'a' || first > 'h' {
+                            return Some(format!("move {}, invalid file {}", san_move, first))
+                        }
                         from_file = Some(first as u8 - 'a' as u8 + 1);
                     }
 
                     mv = mv.chars().skip(1).collect();
                 }
 
-                let to = Square::from_string(&mv);
+                let to_result = Square::from_string(&mv);
+
+                if to_result.is_err() {
+                    return Some(to_result.unwrap_err());
+                }
+
+                let to = to_result.unwrap();
 
                 let to_piece = self.board.get_piece(to.file, to.rank);
 
@@ -578,11 +622,15 @@ impl ChessPosition {
                             let mut from_square : Option<Square> = None;
 
                             for from in &from_squares {
-                                self.do_move(&from, &to, piece_type, capture, promotion);
+                                let do_move_result = self.do_move(&from, &to, piece_type, capture, promotion);
+
+                                if do_move_result.is_some() {
+                                    return Some(format!("move {}, error applying move: {}", san_move, do_move_result.unwrap()));
+                                }
 
                                 if !self.king_in_check(self.active_color) {
                                     if from_square.is_some() {
-                                        return Some("cannot disambiguate move during check test".to_owned());
+                                        return Some(format!("move {}, cannot disambiguate move during check test", san_move));
                                     }
                                     from_square = Some(*from)
                                 }
@@ -601,7 +649,7 @@ impl ChessPosition {
                             if from_square.is_some() {
                                 from_square.unwrap()
                             } else {
-                                return Some(format!("cannot disambiguate move, multiple from squares: {:?}", &from_squares));
+                                return Some(format!("move {}, cannot disambiguate move, multiple from squares: {:?}", san_move, &from_squares));
                             }
                         }
                     }
@@ -618,7 +666,7 @@ impl ChessPosition {
 
     }
 
-    fn do_move(&mut self, from: &Square, to: &Square, piece_type: PieceType, capture: bool, promotion: Option<PieceType>) {
+    fn do_move(&mut self, from: &Square, to: &Square, piece_type: PieceType, capture: bool, promotion: Option<PieceType>) -> Option<String> {
         self.move_piece(from.file, from.rank, to.file, to.rank); // move to board
 
         if capture && piece_type == PieceType::Pawn && 
@@ -638,15 +686,20 @@ impl ChessPosition {
         }
 
         if piece_type == PieceType::Pawn && (from.rank as i8 - to.rank as i8).abs() == 2 {
-            if self.active_color == ChessColor::White {
-                self.en_passant_target_square = from.north();
+            let result = if self.active_color == ChessColor::White {
+                from.north()
             } else {
-                self.en_passant_target_square = from.south();
+                from.south()
+            };
+            
+            if result.is_err() {
+                return Some(result.unwrap_err());
             }
+            self.en_passant_target_square = Some(result.unwrap());
         } else {
             self.en_passant_target_square = None;
         }                
-
+        None
     }
 
     pub fn to_string(&self) -> String {
