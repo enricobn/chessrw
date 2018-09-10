@@ -1,12 +1,13 @@
 DOING
 ------
+- collect parse errors
 
 TODO
 -----
 - don't sort help flags / options
 - when writing, try to right justify at 80 chars
 - flag to retain tags order
-- optimize (can I remove clone on creation of ChessGame?)
+- optimize
 - add more tests:
   - filtering games with tag filter
     - even tags that do not exist

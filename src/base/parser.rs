@@ -122,6 +122,8 @@ pub struct ChessParserIterator<'a,R: Read> {
     skip_game: bool,
     bytes: usize,
     progress_bar: ProgressBar,
+    errors: Vec<String>,
+    line: u64,
 }
 
 enum GameResultReason {
@@ -163,7 +165,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
             tag_key: String::new(), tag_value: String::new(), reason: GameResultReason::Normal, 
             result_from_tag: String::new(), variation_count: 0, nags: HashMap::new(), 
             ch: char::from_digit(0, 10).unwrap(), skip_game: false, bytes: 0, 
-            progress_bar: pb};
+            progress_bar: pb, errors: Vec::new(), line: 0};
     }
 
     pub fn to_game(&self) -> ChessGameImpl {
@@ -171,6 +173,10 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
             comments: self.comments.clone(), variations: self.variations.clone(),
             after_variations_comments: self.after_variations_comments.clone(),
             game_result: self.result_from_moves.clone(), nags: self.nags.clone()}
+    }
+
+    pub fn get_errors(&self) -> &Vec<String> {
+        &self.errors
     }
 
     fn get_game(&mut self) -> bool {
@@ -319,13 +325,13 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
         loop {
             let count = self.file_reader.read_line(&mut self.buf);
 
-            /*self.lines += 1;
-            if self.lines % 100_000 == 0 {
+            self.line += 1;
+            /*if self.lines % 100_000 == 0 {
                 println!("{}", self.lines);
             }*/
             
             if count.is_err() {
-                // TODO
+                self.errors.push(format!("Error in line {}: cannot read line.", self.line));
                 continue;
             }
 

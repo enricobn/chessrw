@@ -146,6 +146,11 @@ pub fn main() -> std::io::Result<()> {
         println!("{} games red in {}.", count.separated_string(), format_duration(start.elapsed()));
     }
 
+    if !&parsed.get_errors().is_empty() {
+        println!("{} errors found:", &parsed.get_errors().len());
+        &parsed.get_errors().iter().for_each(|s| println!("{}", s));
+    }
+
     Result::Ok(())
 }
 
