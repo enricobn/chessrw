@@ -12,7 +12,7 @@ use std::thread;
 use std::time::Instant;
 use std::time::Duration;
 
-use clap::{Arg, App, ArgMatches};
+use clap::{Arg, App, ArgMatches, AppSettings};
 use separator::Separatable;
 use indexmap::IndexMap;
 
@@ -40,6 +40,7 @@ pub fn main() -> std::io::Result<()> {
 
     let matches = 
         App::new("Chess read / write")
+            .setting(AppSettings::DeriveDisplayOrder)
             .version("0.1.0")
             .arg(Arg::with_name("INPUT")
                 .help("Sets the input file to use")
@@ -52,17 +53,17 @@ pub fn main() -> std::io::Result<()> {
             .arg(Arg::with_name("nocomments").long("nocomments"))
             .arg(Arg::with_name("novariations").long("novariations"))
             .arg(Arg::with_name("notags").long("notags"))
-            .arg(Arg::with_name("whitewins").long("whitewins"))
-            .arg(Arg::with_name("blackwins").long("blackwins"))
-            .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
-            .arg(Arg::with_name("draw").long("draw"))
-            .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
             .arg(Arg::with_name("onlymoves").long("onlymoves").help("Write only moves (alias for --nocomments --novariations --notags)."))
             .arg(Arg::with_name("players").long("players").takes_value(true).help("A comma separated list of players. \
                 Put an * as first character to get only games between players. \
                 Put a +, - or = as first character of a player to get only wins, loses or draws for that player."))
+            .arg(Arg::with_name("whitewins").long("whitewins"))
+            .arg(Arg::with_name("blackwins").long("blackwins"))
+            .arg(Arg::with_name("draw").long("draw"))
+            .arg(Arg::with_name("minplycount").long("minplycount").takes_value(true))
             .arg(Arg::with_name("fen").long("fen").takes_value(true))
             .arg(Arg::with_name("threads").long("threads").takes_value(true).help("Number of threads to use, it's used only when fen is used."))
+            .arg(Arg::with_name("noprogress").long("noprogress").help("No progress bar is showed (faster)."))
             .get_matches();
 
     let input = matches.value_of("INPUT").unwrap();

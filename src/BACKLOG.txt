@@ -4,7 +4,6 @@ DOING
 
 TODO
 -----
-- don't sort help flags / options
 - when writing, try to right justify at 80 chars
 - optimize
 - add more tests:
