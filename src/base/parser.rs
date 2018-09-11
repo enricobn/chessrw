@@ -8,6 +8,7 @@ use std::collections::hash_map::Entry;
 
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
+use indexmap::IndexMap;
 
 use base::tag::*;
 use base::fen::*;
@@ -18,7 +19,7 @@ use base::game::*;
 pub struct ChessParserConfig<'a> {
     ignore_comments: bool,
     ignore_variations: bool,
-    tag_filter: Option<&'a Fn(&HashMap<String,String>) -> bool>,
+    tag_filter: Option<&'a Fn(&IndexMap<String,String>) -> bool>,
     debug: bool,
     file_size: u64,
     progress: bool,
@@ -43,7 +44,7 @@ impl <'a> ChessParserBuilder<'a> {
         self.config.ignore_variations = true;
     }
 
-    pub fn tag_filter(&mut self, filter: &'a Fn(&HashMap<String,String>) -> bool) {
+    pub fn tag_filter(&mut self, filter: &'a Fn(&IndexMap<String,String>) -> bool) {
         self.config.tag_filter = Some(filter);
     }
 
@@ -110,7 +111,7 @@ pub struct ChessParserIterator<'a,R: Read> {
     last_char: char,
     not_parsed: String,
     result_from_moves: String,
-    tags: HashMap<String,String>, // TODO use a linked hash map?
+    tags: IndexMap<String,String>, // TODO use a linked hash map?
     end_parse: bool,
     variations: HashMap<Int,Vec<String>>,
     after_variations_comments: HashMap<Int,HashMap<Int,String>>,
@@ -161,7 +162,7 @@ impl <'a, R: Read> ChessParserIterator<'a,R> {
             .progress_chars("#>-"));
         return ChessParserIterator{config: config, file_reader: file_reader, buf: String::new(), moves: Vec::new(), 
             curr_move: String::new(), status: Status::Headings, last_char: char::from_digit(0, 10).unwrap(),
-            not_parsed: String::new(), result_from_moves: String::new(), tags: HashMap::new(), end_parse: false,
+            not_parsed: String::new(), result_from_moves: String::new(), tags: IndexMap::new(), end_parse: false,
             variations: HashMap::new(), after_variations_comments: HashMap::new(), comments: HashMap::new(),
             tag_key: String::new(), tag_value: String::new(),  
             variation_count: 0, nags: HashMap::new(), 
@@ -618,7 +619,7 @@ impl <'a,R: Read> Iterator for ChessParserIterator<'a,R> {
 
 impl <'a,R: Read> ChessGame for ChessParserIterator<'a,R> {
 
-    fn get_tags(&self) -> &HashMap<String,String> {
+    fn get_tags(&self) -> &IndexMap<String,String> {
         &self.tags
     }
 

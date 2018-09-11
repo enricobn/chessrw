@@ -6,7 +6,6 @@ TODO
 -----
 - don't sort help flags / options
 - when writing, try to right justify at 80 chars
-- flag to retain tags order
 - optimize
 - add more tests:
   - filtering games with tag filter

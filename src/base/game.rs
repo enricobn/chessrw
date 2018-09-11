@@ -4,11 +4,13 @@ use base::fen::*;
 use base::position::*;
 use base::tag::*;
 
+use indexmap::IndexMap;
+
 type Int = i16;
 
 pub trait ChessGame {
 
-    fn get_tags(&self) -> &HashMap<String,String>;
+    fn get_tags(&self) -> &IndexMap<String,String>;
 
     fn get_moves(&self) -> &Vec<String>;
 
@@ -45,7 +47,7 @@ pub trait ChessGame {
 }
 
 pub struct ChessGameImpl {
-    tags: HashMap<String,String>,
+    tags: IndexMap<String,String>,
     moves: Vec<String>,
     comments: HashMap<Int,String>,
     variations: HashMap<Int,Vec<String>>,
@@ -56,7 +58,7 @@ pub struct ChessGameImpl {
 
 impl ChessGameImpl {
 
-    pub fn new(tags: HashMap<String,String>,
+    pub fn new(tags: IndexMap<String,String>,
            moves: Vec<String>,
            comments: HashMap<Int,String>,
            variations: HashMap<Int,Vec<String>>,
@@ -71,7 +73,7 @@ impl ChessGameImpl {
 
 impl ChessGame for ChessGameImpl {
 
-    fn get_tags(&self) -> &HashMap<String,String> {
+    fn get_tags(&self) -> &IndexMap<String,String> {
         &self.tags
     }
 

@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::fs;
-use std::collections::HashMap;
 use std::io::Read;
+use indexmap::IndexMap;
 
 use base::fen::FENParserBuilder;
 use base::game::*;
@@ -269,6 +269,6 @@ fn  collect<'a,R: Read>(mut it: ChessParserIterator<'a,R>) -> Vec<ChessGameImpl>
     result
 }
 
-fn filter_tags_by_event(tags: &HashMap<String,String>) -> bool {
+fn filter_tags_by_event(tags: &IndexMap<String,String>) -> bool {
     tags.get("Event").map_or_else(|| false, |r| r == "Test")
 }

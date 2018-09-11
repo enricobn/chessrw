@@ -1,8 +1,8 @@
 extern crate chessrw;
 extern crate clap;
 extern crate separator;
+extern crate indexmap;
 
-use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::fs;
 use std::fs::File;
@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use clap::{Arg, App, ArgMatches};
 use separator::Separatable;
+use indexmap::IndexMap;
 
 use chessrw::base::parser::*;
 use chessrw::base::writer::*;
@@ -29,10 +30,10 @@ use chessrw::base::game::*;
  * No move times
  * 
  * Without write file nor other filters --noprogress:
- * 81,871 games red in 1 second 454 millis.
+ * 81,871 games red in 1 second 275 millis.
  * 
  * Without write file and --blackwins --noprogress:
- * 37,543 games red in 1 second 55 millis.
+ * 37,543 games red in 968 millis.
  * Arena count is 37,548.
  */
 pub fn main() -> std::io::Result<()> {
@@ -70,7 +71,7 @@ pub fn main() -> std::io::Result<()> {
 
     let tags_filter = TagsFilter::new(&matches);
 
-    let fun = |tags: &HashMap<String,String>| tags_filter.filter(tags);
+    let fun = |tags: &IndexMap<String,String>| tags_filter.filter(tags);
 
     let mut builder = ChessParserBuilder::new();
     
@@ -314,13 +315,13 @@ impl <'a> TagsFilter<'a> {
             players : matches.value_of("players")}
     }
 
-    fn filter(&self, tags: &HashMap<String,String>) -> bool {
+    fn filter(&self, tags: &IndexMap<String,String>) -> bool {
         (!self.apply_result() || self.filter_result(tags)) &&
         (!self.apply_ply_count() || self.filter_ply_count(tags)) &&
         (!self.apply_players() || self.filter_players(tags))
     }
 
-    fn filter_result(&self, tags: &HashMap<String,String>) -> bool {
+    fn filter_result(&self, tags: &IndexMap<String,String>) -> bool {
         tags.get("Result").map_or_else(|| false, |r| 
             self.white_wins && r == "1-0" ||
             self.black_wins && r == "0-1" ||
@@ -328,7 +329,7 @@ impl <'a> TagsFilter<'a> {
         )
     }
 
-    fn filter_ply_count(&self, tags: &HashMap<String,String>) -> bool {
+    fn filter_ply_count(&self, tags: &IndexMap<String,String>) -> bool {
         // TODO parse error
         let min_ply_count = self.min_ply_count.unwrap().parse::<i32>().unwrap();
         tags.get("PlyCount").map_or_else(|| false, |r| 
@@ -339,7 +340,7 @@ impl <'a> TagsFilter<'a> {
         )
     }
 
-    fn filter_players(&self, tags: &HashMap<String,String>) -> bool {
+    fn filter_players(&self, tags: &IndexMap<String,String>) -> bool {
         tags.get("White").map_or_else(|| false, |wp| 
             tags.get("Black").map_or_else(|| false, |bp| {
                 let mut result = false;
@@ -383,15 +384,15 @@ impl <'a> TagsFilter<'a> {
         )
     }
 
-    fn white_wins(&self, tags: &HashMap<String,String>) -> bool {
+    fn white_wins(&self, tags: &IndexMap<String,String>) -> bool {
         tags.get("Result").map_or_else(|| false, |r| r == "1-0")
     }
 
-    fn black_wins(&self, tags: &HashMap<String,String>) -> bool {
+    fn black_wins(&self, tags: &IndexMap<String,String>) -> bool {
         tags.get("Result").map_or_else(|| false, |r| r == "0-1")
     }
 
-    fn draw(&self, tags: &HashMap<String,String>) -> bool {
+    fn draw(&self, tags: &IndexMap<String,String>) -> bool {
         tags.get("Result").map_or_else(|| false, |r| r == "1/2-1/2")
     }
 
@@ -424,8 +425,8 @@ fn tags_filter_players(players: &str) -> TagsFilter {
     }
 }
 
-fn white_vs_black(white: &str, black: &str, result: Option<&str>) -> HashMap<String,String> {
-    let mut tags : HashMap<String,String> = HashMap::new();
+fn white_vs_black(white: &str, black: &str, result: Option<&str>) -> IndexMap<String,String> {
+    let mut tags : IndexMap<String,String> = IndexMap::new();
     tags.insert("White".to_string(), white.to_string());
     tags.insert("Black".to_string(), black.to_string());
 
