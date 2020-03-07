@@ -56,21 +56,21 @@ pub fn piece_to_char(piece: Piece) -> char {
     }
 }
 
-pub fn piece_color(piece: &Piece) -> ChessColor {
+pub fn piece_color(piece: &Piece) -> Option<ChessColor> {
     match piece {
-        Piece::WhitePawn => ChessColor::White,
-        Piece::BlackPawn => ChessColor::Black,
-        Piece::WhiteBishop => ChessColor::White,
-        Piece::BlackBishop => ChessColor::Black,
-        Piece::WhiteKnight => ChessColor::White,
-        Piece::BlackKnight => ChessColor::Black,
-        Piece::WhiteRook => ChessColor::White,
-        Piece::BlackRook => ChessColor::Black,
-        Piece::WhiteQueen => ChessColor::White,
-        Piece::BlackQueen => ChessColor::Black,
-        Piece::WhiteKing => ChessColor::White,
-        Piece::BlackKing => ChessColor::Black,
-        Piece::None => ChessColor::White, // TODO
+        Piece::WhitePawn => Some(ChessColor::White),
+        Piece::BlackPawn => Some(ChessColor::Black),
+        Piece::WhiteBishop => Some(ChessColor::White),
+        Piece::BlackBishop => Some(ChessColor::Black),
+        Piece::WhiteKnight => Some(ChessColor::White),
+        Piece::BlackKnight => Some(ChessColor::Black),
+        Piece::WhiteRook => Some(ChessColor::White),
+        Piece::BlackRook => Some(ChessColor::Black),
+        Piece::WhiteQueen => Some(ChessColor::White),
+        Piece::BlackQueen => Some(ChessColor::Black),
+        Piece::WhiteKing => Some(ChessColor::White),
+        Piece::BlackKing => Some(ChessColor::Black),
+        Piece::None => None,
     }
 }
 
@@ -186,7 +186,7 @@ impl ChessBoard {
 
         let pawn = piece_type_to_piece(PieceType::Pawn, attacking_color);
 
-        for s in self.reacheable_from_pawn(square, true, attacking_color) {
+        for s in self.reachable_from_pawn(square, true, attacking_color) {
             if self.get_piece(s.file, s.rank) == pawn {
                 // println!("square {} is reachable from pawn in {}", square, s);
                 return false;
@@ -194,7 +194,7 @@ impl ChessBoard {
         }
 
         let knight = piece_type_to_piece(PieceType::Knight, attacking_color);
-        for s in ChessBoard::reacheable_from_knight(&square) {
+        for s in ChessBoard::reachable_from_knight(&square) {
 
             if self.get_piece(s.file, s.rank) == knight {
                 // println!("square {} is reachable from knight in {}", square, s);
@@ -203,7 +203,7 @@ impl ChessBoard {
         }
 
         let king = piece_type_to_piece(PieceType::King, attacking_color);
-        for s in ChessBoard::reacheable_from_king(&square) {
+        for s in ChessBoard::reachable_from_king(&square) {
 
             if self.get_piece(s.file, s.rank) == king {
                 // println!("square {} is reachable from king in {}", square, s);
@@ -212,7 +212,7 @@ impl ChessBoard {
         }
 
         let bishop = piece_type_to_piece(PieceType::Bishop, attacking_color);
-        for s in self.reacheable_from_sliding_piece(&square, true, false) {
+        for s in self.reachable_from_sliding_piece(&square, true, false) {
 
             if self.get_piece(s.file, s.rank) == bishop {
                 // println!("square {} is reachable from bishop in {}", square, s);
@@ -221,7 +221,7 @@ impl ChessBoard {
         }
 
         let rook = piece_type_to_piece(PieceType::Rook, attacking_color);
-        for s in self.reacheable_from_sliding_piece(&square, false, true) {
+        for s in self.reachable_from_sliding_piece(&square, false, true) {
 
             if self.get_piece(s.file, s.rank) == rook {
                 // println!("square {} is reachable from rook in {}", square, s);
@@ -230,7 +230,7 @@ impl ChessBoard {
         }
 
         let queen = piece_type_to_piece(PieceType::Queen, attacking_color);
-        for s in self.reacheable_from_sliding_piece(&square, true, true) {
+        for s in self.reachable_from_sliding_piece(&square, true, true) {
 
             if self.get_piece(s.file, s.rank) == queen {
                 // println!("square {} is reachable from queen in {}", square, s);
@@ -242,7 +242,7 @@ impl ChessBoard {
         true
     }
 
-    fn reacheable_from_pawn(&self, square: &Square, capture: bool, pawn_color: ChessColor) -> Vec<Square> {
+    fn reachable_from_pawn(&self, square: &Square, capture: bool, pawn_color: ChessColor) -> Vec<Square> {
         let mut squares = Vec::new();
 
         let rank_dir = if pawn_color == ChessColor::White {
@@ -268,7 +268,7 @@ impl ChessBoard {
         squares
     }
 
-    pub fn reacheable_from_king(square: &Square) -> Vec<Square> {
+    pub fn reachable_from_king(square: &Square) -> Vec<Square> {
         let mut squares = Vec::new();
 
         ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-1, -1));
@@ -283,7 +283,7 @@ impl ChessBoard {
         squares
     }
 
-    pub fn reacheable_from_knight(square: &Square) -> Vec<Square> {
+    pub fn reachable_from_knight(square: &Square) -> Vec<Square> {
         let mut squares = Vec::new();
 
         ChessBoard::add_to_squares_if_ok(&mut squares, square.mv(-2, -1));
@@ -306,21 +306,21 @@ impl ChessBoard {
         squares.push(square_result.unwrap());
     }
 
-    pub fn reacheable_from_sliding_piece(&self, square: &Square, diagonal: bool, straight: bool) -> Vec<Square> {
+    pub fn reachable_from_sliding_piece(&self, square: &Square, diagonal: bool, straight: bool) -> Vec<Square> {
         let mut squares = Vec::new();
 
         if diagonal {
-            squares.extend(self.reacheable_from_direction(square, 1, 1));
-            squares.extend(self.reacheable_from_direction(square, -1, 1));
-            squares.extend(self.reacheable_from_direction(square, 1, -1));
-            squares.extend(self.reacheable_from_direction(square, -1, -1));
+            squares.extend(self.reachable_from_direction(square, 1, 1));
+            squares.extend(self.reachable_from_direction(square, -1, 1));
+            squares.extend(self.reachable_from_direction(square, 1, -1));
+            squares.extend(self.reachable_from_direction(square, -1, -1));
         }
 
         if straight {
-            squares.extend(self.reacheable_from_direction(square, 1, 0));
-            squares.extend(self.reacheable_from_direction(square, -1, 0));
-            squares.extend(self.reacheable_from_direction(square, 0, 1));
-            squares.extend(self.reacheable_from_direction(square, 0, -1));
+            squares.extend(self.reachable_from_direction(square, 1, 0));
+            squares.extend(self.reachable_from_direction(square, -1, 0));
+            squares.extend(self.reachable_from_direction(square, 0, 1));
+            squares.extend(self.reachable_from_direction(square, 0, -1));
         }
 
         // squares.iter().for_each(|it| println!("{},{}", it.file, it.rank));
@@ -328,7 +328,7 @@ impl ChessBoard {
         squares
     }
 
-    pub fn reacheable_from_direction(&self, square: &Square, file_offset: i8, rank_offset: i8) -> Vec<Square> {
+    pub fn reachable_from_direction(&self, square: &Square, file_offset: i8, rank_offset: i8) -> Vec<Square> {
         let mut squares = Vec::new();
 
         let mut i = 1;
@@ -392,7 +392,7 @@ impl Square {
     pub fn new(file: u8, rank: u8) -> Result<Square,String> {
 
         if file >= 1 && file <= 8 && rank >= 1 && rank <= 8 {
-            Ok(Square{file: file, rank: rank})
+            Ok(Square{file, rank })
         } else {
             Err(format!("Invalid square indices ({},{}).", file, rank))
         }
@@ -477,7 +477,7 @@ impl ChessPosition {
         mv = mv.replace('#', "");
         mv = mv.replace('=', "");
 
-        if mv == "O-O" || mv == "0-0" {
+        if &mv == "O-O" || &mv == "0-0" {
             if self.active_color == ChessColor::White {
                 self.move_piece(5, 1, 7, 1);
                 self.move_piece(8, 1, 6, 1);
@@ -487,7 +487,7 @@ impl ChessPosition {
                 self.move_piece(8, 8, 6, 8);
                 self.black_king_side_castling = false;
             }
-        } else if mv == "O-O-O" || mv == "0-0-0" {
+        } else if &mv == "O-O-O" || &mv == "0-0-0" {
             if self.active_color == ChessColor::White {
                 self.move_piece(5, 1, 3, 1);
                 self.move_piece(1, 1, 4, 1);
@@ -602,12 +602,12 @@ impl ChessPosition {
                         // from_squares.iter().for_each(|it| println!("found in {},{}", it.file, it.rank));
 
                         let reachable = match piece_type {
-                            PieceType::Pawn => self.board.reacheable_from_pawn(&to, capture, self.active_color),
-                            PieceType::King => ChessBoard::reacheable_from_king(&to),
-                            PieceType::Knight => ChessBoard::reacheable_from_knight(&to),
-                            PieceType::Bishop => self.board.reacheable_from_sliding_piece(&to, true, false),
-                            PieceType::Rook => self.board.reacheable_from_sliding_piece(&to, false, true),
-                            PieceType::Queen => self.board.reacheable_from_sliding_piece(&to, true, true),
+                            PieceType::Pawn => self.board.reachable_from_pawn(&to, capture, self.active_color),
+                            PieceType::King => ChessBoard::reachable_from_king(&to),
+                            PieceType::Knight => ChessBoard::reachable_from_knight(&to),
+                            PieceType::Bishop => self.board.reachable_from_sliding_piece(&to, true, false),
+                            PieceType::Rook => self.board.reachable_from_sliding_piece(&to, false, true),
+                            PieceType::Queen => self.board.reachable_from_sliding_piece(&to, true, true),
                             _ => vec![]
                         };
 
@@ -729,7 +729,7 @@ impl ChessPosition {
         } else if capture {
             let en_passant = (*piece == Piece::WhitePawn || *piece == Piece::BlackPawn) && self.en_passant_target_square.is_some() &&
                 self.en_passant_target_square.unwrap() == *to;
-            en_passant || *to_piece != Piece::None && piece_color(to_piece) == other_color(self.active_color)
+            en_passant || *to_piece != Piece::None && piece_color(to_piece) == Some(other_color(self.active_color))
         } else {
             *to_piece == Piece::None
         }
