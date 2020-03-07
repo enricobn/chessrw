@@ -478,25 +478,9 @@ impl ChessPosition {
         mv = mv.replace('=', "");
 
         if &mv == "O-O" || &mv == "0-0" {
-            if self.active_color == ChessColor::White {
-                self.move_piece(5, 1, 7, 1);
-                self.move_piece(8, 1, 6, 1);
-                self.white_king_side_castling = false;
-            } else {
-                self.move_piece(5, 8, 7, 8);
-                self.move_piece(8, 8, 6, 8);
-                self.black_king_side_castling = false;
-            }
+            self.king_side_castling()
         } else if &mv == "O-O-O" || &mv == "0-0-0" {
-            if self.active_color == ChessColor::White {
-                self.move_piece(5, 1, 3, 1);
-                self.move_piece(1, 1, 4, 1);
-                self.white_queen_side_castling = false;
-            } else {
-                self.move_piece(5, 8, 3, 8);
-                self.move_piece(1, 8, 4, 8);
-                self.black_queen_side_castling = false;
-            }
+            self.queen_side_castling()
         } else {
             let first = mv.chars().next().unwrap();
 
@@ -635,15 +619,7 @@ impl ChessPosition {
                                     from_square = Some(*from)
                                 }
 
-                                self.board = cloned.board;
-                                self.en_passant_target_square = cloned.en_passant_target_square;
-                                self.full_move_number = cloned.full_move_number;
-                                self.half_move_clock = cloned.half_move_clock;
-                                self.active_color = cloned.active_color;
-                                self.black_king_side_castling = cloned.black_king_side_castling;
-                                self.white_king_side_castling = cloned.white_king_side_castling;
-                                self.black_queen_side_castling = cloned.black_queen_side_castling;
-                                self.white_queen_side_castling = cloned.white_queen_side_castling;
+                                self.update_with(cloned);
                             }
 
                             if from_square.is_some() {
@@ -664,6 +640,42 @@ impl ChessPosition {
                 
         None
 
+    }
+
+    fn queen_side_castling(&mut self) -> () {
+        if self.active_color == ChessColor::White {
+            self.move_piece(5, 1, 3, 1);
+            self.move_piece(1, 1, 4, 1);
+            self.white_queen_side_castling = false;
+        } else {
+            self.move_piece(5, 8, 3, 8);
+            self.move_piece(1, 8, 4, 8);
+            self.black_queen_side_castling = false;
+        }
+    }
+
+    fn king_side_castling(&mut self) -> () {
+        if self.active_color == ChessColor::White {
+            self.move_piece(5, 1, 7, 1);
+            self.move_piece(8, 1, 6, 1);
+            self.white_king_side_castling = false;
+        } else {
+            self.move_piece(5, 8, 7, 8);
+            self.move_piece(8, 8, 6, 8);
+            self.black_king_side_castling = false;
+        }
+    }
+
+    fn update_with(&mut self, cloned: ChessPosition) {
+        self.board = cloned.board;
+        self.en_passant_target_square = cloned.en_passant_target_square;
+        self.full_move_number = cloned.full_move_number;
+        self.half_move_clock = cloned.half_move_clock;
+        self.active_color = cloned.active_color;
+        self.black_king_side_castling = cloned.black_king_side_castling;
+        self.white_king_side_castling = cloned.white_king_side_castling;
+        self.black_queen_side_castling = cloned.black_queen_side_castling;
+        self.white_queen_side_castling = cloned.white_queen_side_castling;
     }
 
     fn do_move(&mut self, from: &Square, to: &Square, piece_type: PieceType, capture: bool, promotion: Option<PieceType>) -> Option<String> {
